@@ -44,12 +44,32 @@ CONSUMER_BRANDS = (
 # matched as "land", leaving "rover" to look like a model.
 MULTIWORD_BRANDS = tuple(b for b in CONSUMER_BRANDS if " " in b or "-" in b)
 
-# Models for these are prefetched at startup so a bare "corolla" - no make typed - can
+# Models for these are prefetched at startup so a bare "mustang" - no make typed - can
 # still be resolved. Searching all 12,300 makes per keystroke is not an option.
 PREFETCH_MAKES = (
     "toyota", "honda", "ford", "chevrolet", "nissan", "subaru",
     "mazda", "volkswagen", "bmw", "mercedes-benz", "hyundai", "kia",
+    "porsche", "audi", "lexus", "jeep", "dodge", "tesla",
+    "acura", "infiniti", "mitsubishi", "volvo", "cadillac", "gmc",
 )
+
+# What people type vs what vPIC calls it.
+MAKE_ALIASES = {
+    "chevy": "chevrolet",
+    "vw": "volkswagen",
+    "mercedes": "mercedes-benz",
+    "benz": "mercedes-benz",
+    "bimmer": "bmw",
+    "beemer": "bmw",
+}
+
+# vPIC lists the MX-5 without ever using the name "Miata", so a search for it finds
+# nothing at all unless we translate.
+MODEL_ALIASES = {
+    "miata": "mx-5",
+    "vette": "corvette",
+    "stang": "mustang",
+}
 
 # vPIC stores makes upper-case. Title-casing reads better, except for these.
 ACRONYM_BRANDS = {"bmw", "gmc", "mini", "ram", "kia"}
@@ -131,20 +151,27 @@ def _split_make(text: str) -> tuple[str | None, str]:
     known = {m.lower(): m for m in (_makes or [b.title() for b in CONSUMER_BRANDS])}
     tokens = [t for t in re.split(r"[\s,]+", lowered) if t]
 
+    def without(i: int) -> str:
+        return " ".join(tokens[:i] + tokens[i + 1 :])
+
+    # Pass 1: consumer brands only. Without this, "mustang" matches the make "Mustang
+    # Trailers" and the Ford Mustang is never found - same for "challenger" and "golf".
     for i, token in enumerate(tokens):
         if len(token) < 2:
             continue
-        # Exact make wins; otherwise the shortest make this token is a prefix of, so
-        # "ford" matches FORD rather than FORD MOTOR COMPANY OF CANADA.
-        if token in known:
-            hit = known[token]
-        else:
-            candidates = [m for m in known.values() if m.lower().startswith(token)]
-            consumer = [m for m in candidates if m.lower() in CONSUMER_BRANDS]
-            pool = consumer or candidates
-            hit = min(pool, key=len) if pool else None
-        if hit:
-            return _pretty(hit), " ".join(tokens[:i] + tokens[i + 1 :])
+        canonical = MAKE_ALIASES.get(token, token)
+        if canonical in CONSUMER_BRANDS:
+            return _pretty(known.get(canonical, canonical)), without(i)
+        matches = [b for b in CONSUMER_BRANDS if b.startswith(canonical)]
+        if matches:
+            best = min(matches, key=len)
+            return _pretty(known.get(best, best)), without(i)
+
+    # Pass 2: any make in vPIC, but only on an exact match, so a partial token can never
+    # be captured by an obscure trailer manufacturer.
+    for i, token in enumerate(tokens):
+        if len(token) >= 2 and token in known:
+            return _pretty(known[token]), without(i)
 
     return None, lowered
 
@@ -153,24 +180,47 @@ def _rank_models(models: list[str], needle: str) -> list[str]:
     # vPIC model lists are littered with commercial and fleet entries like "'34" and
     # "A8513". Anything not starting with a letter goes last, so a bare make query leads
     # with cars people recognise.
+    # Browsing a whole make: alphabetical is what people expect. Fleet and commercial
+    # codes ("A8513", "'34") go last; the 4-digit floor keeps legitimately numeric names
+    # like BMW 335 and Mazda 626 out of it.
+    if not needle:
+        def is_junk(model: str) -> int:
+            if not model[:1].isalpha():
+                return 1
+            return 1 if re.fullmatch(r"[A-Za-z]{1,2}\d{3,}\w*", model) else 0
+
+        return sorted(models, key=lambda m: (is_junk(m), m.lower()))
+
+    return [m for _, m in sorted(_score(models, needle))]
+
+
+def _score(models: list[str], needle: str) -> list[tuple[tuple, str]]:
+    """(sort key, model) for every model matching `needle`. Sortable across makes."""
     def is_junk(model: str) -> int:
-        # Fleet and commercial codes: "A8513", "'34", "1500 Foldaway". The 4-digit floor
-        # keeps legitimately numeric names like BMW 335 and Mazda 626 out of it.
         if not model[:1].isalpha():
             return 1
         return 1 if re.fullmatch(r"[A-Za-z]{1,2}\d{3,}\w*", model) else 0
 
-    # Browsing a whole make: alphabetical is what people expect.
-    if not needle:
-        return sorted(models, key=lambda m: (is_junk(m), m.lower()))
+    needle = MODEL_ALIASES.get(needle, needle)
+    parts = needle.split()
 
-    # Narrowing: shortest match first, so "Corolla" beats "Corolla Cross".
-    def best_first(model: str) -> tuple[int, int, str]:
-        return (is_junk(model), len(model), model.lower())
+    def tier(model: str) -> int | None:
+        m = model.lower()
+        if m.startswith(needle):
+            return 0
+        if needle in m:
+            return 1
+        if len(parts) > 1 and all(p in m for p in parts):
+            return 2
+        return None
 
-    prefix = [m for m in models if m.lower().startswith(needle)]
-    contains = [m for m in models if needle in m.lower() and m not in prefix]
-    return sorted(prefix, key=best_first) + sorted(contains, key=best_first)
+    out = []
+    for model in models:
+        t = tier(model)
+        if t is not None:
+            # Shortest match first within a tier, so "M3" beats "M30".
+            out.append(((t, is_junk(model), len(model), model.lower()), model))
+    return out
 
 
 # --- public API ------------------------------------------------------------------
@@ -204,24 +254,30 @@ async def search(query: str, limit: int = 8) -> list[dict]:
     # A make was typed: search within its models.
     if make:
         models = await _load_models(make)
-        if not models:
-            return [_result(make, "", year)] if not needle else []
-        return [_result(make, m, year) for m in _rank_models(models, needle)[:limit]]
+        ranked = _rank_models(models, needle) if models else []
+        if ranked:
+            return [_result(make, m, year) for m in ranked[:limit]]
+        if not needle:
+            return [_result(make, "", year)] if models else []
+        # The make matched but led nowhere. vPIC contains a make literally named "GTI",
+        # so "golf gti" gets its model token eaten and returns nothing. Fall back to
+        # treating the whole phrase as a model.
+        needle = rest.lower().strip()
 
-    # No make typed. Search the prefetched popular makes for a matching model, so a bare
-    # "corolla" still resolves.
-    if not needle:
+    # No usable make. Search the prefetched popular makes for a matching model, so a
+    # bare "mustang" still resolves.
+    if len(needle) < 2:
         return []
 
-    results: list[dict] = []
-    for cached_make, models in _models.items():
-        for model in _rank_models(models, needle):
-            if model.lower().startswith(needle):
-                results.append(_result(_pretty(cached_make), model, year))
-        if len(results) >= limit:
-            break
+    # Scored across every cached make, then sorted globally - iterating the dict would
+    # rank by whichever network call finished first, which is not deterministic.
+    scored: list[tuple[tuple, str, str]] = []
+    for cached_make in PREFETCH_MAKES:
+        for key, model in _score(_models.get(cached_make, []), needle):
+            scored.append((key, cached_make, model))
 
-    return results[:limit]
+    scored.sort(key=lambda row: row[0])
+    return [_result(_pretty(mk), model, year) for _, mk, model in scored[:limit]]
 
 
 def cache_status() -> dict:
