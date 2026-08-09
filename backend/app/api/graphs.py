@@ -22,7 +22,13 @@ from app.models.schemas import (
     Reply,
     Stats,
 )
-from app.services import ai_service, community_service, graph_service, tagging
+from app.services import (
+    ai_service,
+    community_service,
+    generations,
+    graph_service,
+    tagging,
+)
 
 router = APIRouter()
 
@@ -44,24 +50,30 @@ def get_car(car_id: str) -> Car:
 
 @router.get("/cars/{car_id}/graph", response_model=Graph, tags=["graph"])
 def get_graph_by_id(car_id: str) -> Graph:
-    """getDAG by id. Use /graph?make=&model= for the create-on-miss path."""
-    car = graph_service.get_car(car_id)
-    if car is None:
+    """getDAG by generation id — the id a vehicle search result carries.
+
+    Creates the graph on first visit, so a search result is always clickable.
+    """
+    graph = graph_service.get_or_create_by_car_id(car_id)
+    if graph is None:
         raise HTTPException(404, f"No car '{car_id}'")
-    return graph_service.get_or_create_graph(car.make, car.model, car.yearRange)
+    return graph
 
 
 @router.get("/graph", response_model=Graph, tags=["graph"])
 def get_or_create_graph(
     make: str = Query(..., description="e.g. Toyota"),
     model: str = Query(..., description="e.g. Corolla"),
-    yearRange: str = Query("—", description="e.g. 2018–2024"),
+    generation: str | None = Query(None, description="e.g. E210"),
+    year: int | None = Query(None, ge=1981, le=2027, description="e.g. 2018"),
 ) -> Graph:
     """getDAG. Creates the car and its stock root if this is the first visit.
 
-    The frontend only ever calls this — there is no separate create call to forget.
+    A graph is per GENERATION, not per model — mods are generation-specific. Pass
+    `generation` outright, or a `year` to resolve it. With neither, the newest generation
+    is used. Prefer /cars/{carId}/graph with the id from a search result.
     """
-    return graph_service.get_or_create_graph(make, model, yearRange)
+    return graph_service.get_or_create_graph(make, model, generation, year)
 
 
 @router.get("/cars/{car_id}/stats", response_model=Stats, tags=["graph"])
@@ -70,6 +82,17 @@ def get_stats(car_id: str) -> Stats:
     if stats is None:
         raise HTTPException(404, f"No car '{car_id}'")
     return stats
+
+
+@router.get("/cars/{car_id}/generations", tags=["graph"])
+def get_generations(car_id: str) -> list[dict]:
+    """Sibling generations of the same model — for a 'wrong year?' switcher."""
+    car = graph_service.get_car(car_id) or generations.by_id(car_id)
+    if car is None:
+        raise HTTPException(404, f"No car '{car_id}'")
+    make = car.make if hasattr(car, "make") else car["make"]
+    model = car.model if hasattr(car, "model") else car["model"]
+    return generations.for_model(make, model)
 
 
 @router.get("/attributes", tags=["graph"])

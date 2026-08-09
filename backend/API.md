@@ -8,7 +8,48 @@ cd backend
 .venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000
 ```
 
-Demo car id: `toyota-corolla`. Demo merge node: `n-rally` (two parents).
+Demo car id: `toyota-corolla-e170`. Demo merge node: `n-rally` (two parents).
+
+## Vehicle search — start here
+
+```
+GET /api/vehicles/search?q=2018 toyota corolla
+```
+
+```json
+{
+  "query": "2018 toyota corolla",
+  "results": [
+    {
+      "id": "toyota-corolla-e170",
+      "label": "Toyota Corolla · E170 (2014–2019)",
+      "make": "Toyota",
+      "model": "Corolla",
+      "generation": "E170",
+      "yearStart": 2014,
+      "yearEnd": 2019,
+      "years": "2014–2019",
+      "heroImage": null,
+      "curated": true,
+      "matchedYear": 2018
+    }
+  ]
+}
+```
+
+**Results are GENERATIONS, not years** — a 2015 and a 2022 Corolla take different parts,
+so the generation is the unit a build graph hangs off. A typed year resolves straight to
+the generation covering it; without one, every generation is offered.
+
+**`id` is the `carId`** every graph endpoint takes. Click a result → `GET
+/api/cars/{id}/graph`.
+
+`curated: false` means we have no generation data for that car and it fell back to a
+single open-ended "All years" entry. Label it differently rather than implying real
+generation data.
+
+Handles `2018 toyota corolla`, `corolla`, `miata`, `mustang`, `golf gti`, `bmw m3`, plus
+nicknames (`chevy`, `vw`). Returns `[]` under two characters, so it is safe per keystroke.
 
 ---
 
@@ -60,10 +101,12 @@ tag traces back to one slot (`engine-turbo`, `brakes-bbk`, `wheels-allterrain`).
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/graph?make=&model=&yearRange=` | **getDAG** — creates the car + stock root on first call |
+| GET | `/vehicles/search?q=` | **Search** — free text → generations |
+| GET | `/cars/{carId}/graph` | **getDAG** by generation id — creates on first visit |
+| GET | `/graph?make=&model=&generation=&year=` | getDAG by name |
+| GET | `/cars/{carId}/generations` | Sibling generations — a "wrong year?" switcher |
 | GET | `/cars` | All cars that have a graph |
 | GET | `/cars/{carId}` | One car |
-| GET | `/cars/{carId}/graph` | getDAG by id |
 | GET | `/cars/{carId}/stats` | **getStats** — real counts |
 | GET | `/attributes` | **getAttributes** — full tag vocabulary |
 | GET | `/cars/{carId}/attributes` | **getAttributes** for one car — tags in use, with counts |
@@ -78,26 +121,31 @@ tag traces back to one slot (`engine-turbo`, `brakes-bbk`, `wheels-allterrain`).
 | GET | `/ai/build-mod/{nodeId}` | **getBuildModAI** (Ahmed) |
 | GET | `/ai/compare?from=&to=` | **getCompareNode** (Ahmed) |
 
-There is no `createDAG` to call — `GET /graph` creates on miss, so the frontend can never
-forget it.
+There is no `createDAG` to call — both graph routes create on miss, so the frontend can
+never forget it. Opening a generation nobody has modded yet returns a graph with just its
+stock root, ready to build on.
 
 ---
 
-## GET `/graph?make=Toyota&model=Corolla` — getDAG
+## GET `/cars/toyota-corolla-e170/graph` — getDAG
 
 ```json
 {
   "car": {
-    "id": "toyota-corolla",
+    "id": "toyota-corolla-e170",
     "make": "Toyota",
     "model": "Corolla",
-    "yearRange": "2018–2024",
+    "generation": "E170",
+    "yearStart": 2014,
+    "yearEnd": 2019,
+    "yearRange": "2014–2019",
+    "heroImage": null,
     "rootNodeId": "n-root"
   },
   "nodes": [
     {
       "id": "n-rally",
-      "carId": "toyota-corolla",
+      "carId": "toyota-corolla-e170",
       "title": "Turbo Rally Build",
       "parentIds": ["n-track-weapon", "n-gravel-rally"],
       "attributes": ["brakes-bbk", "brakes-pads", "engine-swap", "engine-turbo", "exhaust-other", "wheels-allterrain"],
@@ -161,13 +209,13 @@ placeholder. Show a processing state, not the placeholder text.
 
 ---
 
-## GET `/cars/toyota-corolla/stats` — getStats
+## GET `/cars/toyota-corolla-e170/stats` — getStats
 
 Every number is counted from stored records. Nothing is estimated.
 
 ```json
 {
-  "carId": "toyota-corolla",
+  "carId": "toyota-corolla-e170",
   "builds": 15,
   "mods": 36,
   "contributors": 5,
@@ -200,7 +248,7 @@ anything in the last 24 hours.
 
 ---
 
-## POST `/cars/toyota-corolla/nodes` — createNode
+## POST `/cars/toyota-corolla-e170/nodes` — createNode
 
 ```json
 {
@@ -296,7 +344,7 @@ Four groups in layer order. Filter a node by testing
 `level` matches the graph layer that slot occupies, so the panel can be ordered to mirror
 the tree.
 
-## GET `/cars/toyota-corolla/attributes` — getAttributes for one car
+## GET `/cars/toyota-corolla-e170/attributes` — getAttributes for one car
 
 Same shape, but **only tags some node actually carries**, each with a count. Filtering on
 an unused tag would empty the graph, so those are dropped.
@@ -326,7 +374,7 @@ an unused tag would empty the graph, so those are dropped.
 
 ```json
 {
-  "carId": "toyota-corolla",
+  "carId": "toyota-corolla-e170",
   "fromNodeId": "n-turbo",
   "toNodeId": "n-rally",
   "fromTitle": "Turbo Build",
@@ -358,8 +406,8 @@ Everything needed to write a build guide, in one call.
 ```json
 {
   "nodeId": "n-rally",
-  "carId": "toyota-corolla",
-  "car": { "id": "toyota-corolla", "make": "Toyota", "model": "Corolla", "yearRange": "2018–2024", "rootNodeId": "n-root" },
+  "carId": "toyota-corolla-e170",
+  "car": { "id": "toyota-corolla-e170", "make": "Toyota", "model": "Corolla", "generation": "E170", "yearRange": "2014–2019", "rootNodeId": "n-root" },
   "title": "Turbo Rally Build",
   "summary": "Fusion: built turbo motor on gravel geometry. Detuned for reliability.",
   "mods": {
@@ -396,6 +444,7 @@ every post body on the node, already transcribed — the real build knowledge.
 app/api/          controllers — resolve input, call one service, map None to 404
 app/services/     business logic
     graph_service       graphs, nodes, stats
+    generations         curated generation table
     community_service   posts, replies
     ai_service          compare, build payload
     placement           where a new build goes in the DAG
@@ -404,6 +453,9 @@ app/services/     business logic
 app/repositories/ storage — the only module that touches the database
 app/models/       Pydantic schemas — every contract on this page
 ```
+
+Generations are hand-curated in `data/generations.json` — vPIC has no generation concept,
+API Ninjas paywalls it at $99/mo, and CarAPI's free tier is 2020 Ford+Toyota only.
 
 Storage is `data/db.json` behind `repositories/store.py`. Moving to Postgres means
 rewriting that one module — no service, route or response shape changes.

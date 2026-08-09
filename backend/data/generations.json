@@ -1,0 +1,443 @@
+{
+  "_comment": "Hand-curated car generations. vPIC has no generation concept, API Ninjas paywalls theirs at $99/mo, and CarAPI's free tier is 2020 Ford+Toyota only - so this file is the source of truth. Mods are generation-specific (a 2015 and a 2022 Corolla take different parts), which is why the generation, not the model, is what a build graph hangs off. Cars absent from this file still work: they fall back to a single open-ended 'All years' generation. heroImage stays null until artwork lands; the frontend should render a fallback tile rather than a broken image.",
+  "toyota": {
+    "corolla": [
+      {
+        "generation": "E210",
+        "yearStart": 2020,
+        "yearEnd": 2025,
+        "heroImage": null
+      },
+      {
+        "generation": "E170",
+        "yearStart": 2014,
+        "yearEnd": 2019,
+        "heroImage": null
+      },
+      {
+        "generation": "E140/E150",
+        "yearStart": 2009,
+        "yearEnd": 2013,
+        "heroImage": null
+      },
+      {
+        "generation": "E120/E130",
+        "yearStart": 2003,
+        "yearEnd": 2008,
+        "heroImage": null
+      },
+      {
+        "generation": "E110",
+        "yearStart": 1998,
+        "yearEnd": 2002,
+        "heroImage": null
+      }
+    ],
+    "camry": [
+      {
+        "generation": "XV80",
+        "yearStart": 2025,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "XV70",
+        "yearStart": 2018,
+        "yearEnd": 2024,
+        "heroImage": null
+      },
+      {
+        "generation": "XV50",
+        "yearStart": 2012,
+        "yearEnd": 2017,
+        "heroImage": null
+      },
+      {
+        "generation": "XV40",
+        "yearStart": 2007,
+        "yearEnd": 2011,
+        "heroImage": null
+      },
+      {
+        "generation": "XV30",
+        "yearStart": 2002,
+        "yearEnd": 2006,
+        "heroImage": null
+      }
+    ],
+    "supra": [
+      {
+        "generation": "A90",
+        "yearStart": 2020,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "A80",
+        "yearStart": 1993,
+        "yearEnd": 1998,
+        "heroImage": null
+      },
+      {
+        "generation": "A70",
+        "yearStart": 1986,
+        "yearEnd": 1992,
+        "heroImage": null
+      }
+    ],
+    "86": [
+      {
+        "generation": "ZN8",
+        "yearStart": 2022,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "ZN6",
+        "yearStart": 2013,
+        "yearEnd": 2020,
+        "heroImage": null
+      }
+    ]
+  },
+  "honda": {
+    "civic": [
+      {
+        "generation": "FL (11th gen)",
+        "yearStart": 2022,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "FC/FK (10th gen)",
+        "yearStart": 2016,
+        "yearEnd": 2021,
+        "heroImage": null
+      },
+      {
+        "generation": "FB (9th gen)",
+        "yearStart": 2012,
+        "yearEnd": 2015,
+        "heroImage": null
+      },
+      {
+        "generation": "FA/FG (8th gen)",
+        "yearStart": 2006,
+        "yearEnd": 2011,
+        "heroImage": null
+      },
+      {
+        "generation": "ES/EP (7th gen)",
+        "yearStart": 2001,
+        "yearEnd": 2005,
+        "heroImage": null
+      },
+      {
+        "generation": "EK/EM (6th gen)",
+        "yearStart": 1996,
+        "yearEnd": 2000,
+        "heroImage": null
+      }
+    ],
+    "accord": [
+      {
+        "generation": "CY (11th gen)",
+        "yearStart": 2023,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "CV (10th gen)",
+        "yearStart": 2018,
+        "yearEnd": 2022,
+        "heroImage": null
+      },
+      {
+        "generation": "CR (9th gen)",
+        "yearStart": 2013,
+        "yearEnd": 2017,
+        "heroImage": null
+      }
+    ],
+    "s2000": [
+      {
+        "generation": "AP2",
+        "yearStart": 2004,
+        "yearEnd": 2009,
+        "heroImage": null
+      },
+      {
+        "generation": "AP1",
+        "yearStart": 1999,
+        "yearEnd": 2003,
+        "heroImage": null
+      }
+    ]
+  },
+  "subaru": {
+    "wrx": [
+      {
+        "generation": "VB",
+        "yearStart": 2022,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "VA",
+        "yearStart": 2015,
+        "yearEnd": 2021,
+        "heroImage": null
+      },
+      {
+        "generation": "GR/GV",
+        "yearStart": 2008,
+        "yearEnd": 2014,
+        "heroImage": null
+      }
+    ],
+    "brz": [
+      {
+        "generation": "ZD8",
+        "yearStart": 2022,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "ZC6",
+        "yearStart": 2013,
+        "yearEnd": 2020,
+        "heroImage": null
+      }
+    ]
+  },
+  "mazda": {
+    "mx-5": [
+      {
+        "generation": "ND",
+        "yearStart": 2016,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "NC",
+        "yearStart": 2006,
+        "yearEnd": 2015,
+        "heroImage": null
+      },
+      {
+        "generation": "NB",
+        "yearStart": 1999,
+        "yearEnd": 2005,
+        "heroImage": null
+      },
+      {
+        "generation": "NA",
+        "yearStart": 1990,
+        "yearEnd": 1997,
+        "heroImage": null
+      }
+    ],
+    "rx-7": [
+      {
+        "generation": "FD",
+        "yearStart": 1993,
+        "yearEnd": 1995,
+        "heroImage": null
+      },
+      {
+        "generation": "FC",
+        "yearStart": 1986,
+        "yearEnd": 1991,
+        "heroImage": null
+      }
+    ]
+  },
+  "ford": {
+    "mustang": [
+      {
+        "generation": "S650 (7th gen)",
+        "yearStart": 2024,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "S550 (6th gen)",
+        "yearStart": 2015,
+        "yearEnd": 2023,
+        "heroImage": null
+      },
+      {
+        "generation": "S197 (5th gen)",
+        "yearStart": 2005,
+        "yearEnd": 2014,
+        "heroImage": null
+      }
+    ],
+    "focus": [
+      {
+        "generation": "Mk4",
+        "yearStart": 2019,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "Mk3",
+        "yearStart": 2012,
+        "yearEnd": 2018,
+        "heroImage": null
+      }
+    ]
+  },
+  "volkswagen": {
+    "golf": [
+      {
+        "generation": "Mk8",
+        "yearStart": 2022,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "Mk7",
+        "yearStart": 2015,
+        "yearEnd": 2021,
+        "heroImage": null
+      },
+      {
+        "generation": "Mk6",
+        "yearStart": 2010,
+        "yearEnd": 2014,
+        "heroImage": null
+      }
+    ],
+    "gti": [
+      {
+        "generation": "Mk8",
+        "yearStart": 2022,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "Mk7",
+        "yearStart": 2015,
+        "yearEnd": 2021,
+        "heroImage": null
+      },
+      {
+        "generation": "Mk6",
+        "yearStart": 2010,
+        "yearEnd": 2014,
+        "heroImage": null
+      }
+    ],
+    "golf gti": [
+      {
+        "generation": "Mk8",
+        "yearStart": 2022,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "Mk7",
+        "yearStart": 2015,
+        "yearEnd": 2021,
+        "heroImage": null
+      },
+      {
+        "generation": "Mk6",
+        "yearStart": 2010,
+        "yearEnd": 2014,
+        "heroImage": null
+      }
+    ]
+  },
+  "nissan": {
+    "370z": [
+      {
+        "generation": "Z34",
+        "yearStart": 2009,
+        "yearEnd": 2020,
+        "heroImage": null
+      }
+    ],
+    "silvia": [
+      {
+        "generation": "S15",
+        "yearStart": 1999,
+        "yearEnd": 2002,
+        "heroImage": null
+      },
+      {
+        "generation": "S14",
+        "yearStart": 1994,
+        "yearEnd": 1998,
+        "heroImage": null
+      },
+      {
+        "generation": "S13",
+        "yearStart": 1988,
+        "yearEnd": 1993,
+        "heroImage": null
+      }
+    ]
+  },
+  "bmw": {
+    "3-series": [
+      {
+        "generation": "G20",
+        "yearStart": 2019,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "F30",
+        "yearStart": 2012,
+        "yearEnd": 2018,
+        "heroImage": null
+      },
+      {
+        "generation": "E90",
+        "yearStart": 2006,
+        "yearEnd": 2011,
+        "heroImage": null
+      },
+      {
+        "generation": "E46",
+        "yearStart": 1999,
+        "yearEnd": 2005,
+        "heroImage": null
+      },
+      {
+        "generation": "E36",
+        "yearStart": 1991,
+        "yearEnd": 1998,
+        "heroImage": null
+      }
+    ],
+    "m3": [
+      {
+        "generation": "G80",
+        "yearStart": 2021,
+        "yearEnd": null,
+        "heroImage": null
+      },
+      {
+        "generation": "F80",
+        "yearStart": 2014,
+        "yearEnd": 2018,
+        "heroImage": null
+      },
+      {
+        "generation": "E92",
+        "yearStart": 2008,
+        "yearEnd": 2013,
+        "heroImage": null
+      },
+      {
+        "generation": "E46",
+        "yearStart": 2000,
+        "yearEnd": 2006,
+        "heroImage": null
+      }
+    ]
+  }
+}

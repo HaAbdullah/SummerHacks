@@ -119,10 +119,20 @@ class Node(BaseModel):
 
 
 class Car(BaseModel):
+    """A build graph's root subject: one GENERATION of a model, not the model itself.
+
+    Mods are generation-specific, so "Toyota Corolla" is too coarse to hang builds off.
+    `id` is the generation slug returned by vehicle search.
+    """
+
     id: str
     make: str
     model: str
+    generation: str = "All years"
+    yearStart: int | None = None
+    yearEnd: int | None = None
     yearRange: str = "—"
+    heroImage: str | None = None
     rootNodeId: str = ""
 
 

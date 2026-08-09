@@ -20,7 +20,9 @@ from app.models.schemas import CommunityPost, Mods, Node, NodeStats, Reply  # no
 from app.repositories import store  # noqa: E402
 from app.services import community_service, placement, tagging  # noqa: E402
 
-CAR_ID = "toyota-corolla"
+# The graph is keyed by GENERATION, not model — mods are generation-specific. This id
+# is what vehicle search returns for a 2014-2019 Corolla.
+CAR_ID = "toyota-corolla-e170"
 NOW = datetime.now(timezone.utc)
 
 
@@ -271,7 +273,8 @@ REPLIES = [
 def main() -> None:
     car = {
         "id": CAR_ID, "make": "Toyota", "model": "Corolla",
-        "yearRange": "2018–2024", "rootNodeId": "n-root",
+        "generation": "E170", "yearStart": 2014, "yearEnd": 2019,
+        "yearRange": "2014–2019", "heroImage": None, "rootNodeId": "n-root",
     }
 
     nodes = {n["id"]: n for n in NODES}

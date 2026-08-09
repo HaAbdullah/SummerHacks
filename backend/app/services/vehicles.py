@@ -21,6 +21,8 @@ import re
 
 import httpx
 
+from app.services import generations
+
 logger = logging.getLogger(__name__)
 
 VPIC_BASE = "https://vpic.nhtsa.dot.gov/api/vehicles"
@@ -225,23 +227,31 @@ def _score(models: list[str], needle: str) -> list[tuple[tuple, str]]:
 
 # --- public API ------------------------------------------------------------------
 
-def _result(make: str, model: str, year: int | None) -> dict:
-    return {
-        # Stable, URL-safe key for React lists and for routing to the build later.
-        "id": re.sub(r"[^a-z0-9]+", "-", f"{make} {model} {year or ''}".lower()).strip("-"),
-        "label": f"{year} {make} {model}" if year else f"{make} {model}",
-        "make": make,
-        "model": model,
-        "year": year,
-    }
+def _results_for(make: str, model: str, year: int | None) -> list[dict]:
+    """One result per generation — the unit a build graph hangs off.
+
+    A typed year narrows to the single generation covering it, so "2018 toyota corolla"
+    resolves straight to E170 rather than making the user pick. With no year, every
+    generation is offered, because a 2015 and a 2022 Corolla take different parts and
+    guessing would send someone to the wrong build.
+    """
+    gens = generations.for_model(make, model)
+
+    if year is not None:
+        match = generations.covering(make, model, year)
+        # A year outside every known generation still deserves a result rather than
+        # silence — fall back to the model's full list.
+        gens = [match] if match else gens
+
+    return [{**gen, "matchedYear": year} for gen in gens]
 
 
 async def search(query: str, limit: int = 8) -> list[dict]:
-    """Turn whatever the user typed into clickable vehicle results.
+    """Turn whatever the user typed into clickable generation results.
 
     Handles "2018 toyota corolla", "toyota corolla", "corolla", "toyota", and any order
-    of those. `year` is null when the user has not typed one - the frontend should ask
-    rather than guessing, since mods differ sharply between model years.
+    of those. Each result is a generation with its own `id` — that id is the carId the
+    graph endpoints take.
     """
     query = query.strip()
     if len(query) < 2:
@@ -254,11 +264,25 @@ async def search(query: str, limit: int = 8) -> list[dict]:
     # A make was typed: search within its models.
     if make:
         models = await _load_models(make)
+        # Curated models are merged in so a car we have generations for is always
+        # findable, even if vPIC spells it differently or is unreachable.
+        models = sorted({*models, *generations.curated_models(make)})
         ranked = _rank_models(models, needle) if models else []
+        # An exact model name wins outright. Otherwise "2018 toyota corolla" pads its
+        # results with Corolla Cross and Corolla iM, which are different cars.
+        exact = [m for m in ranked if m.lower() == needle]
+        if exact:
+            ranked = exact
+
         if ranked:
-            return [_result(make, m, year) for m in ranked[:limit]]
+            out: list[dict] = []
+            for model in ranked:
+                out.extend(_results_for(make, model, year))
+                if len(out) >= limit:
+                    break
+            return out[:limit]
         if not needle:
-            return [_result(make, "", year)] if models else []
+            return []
         # The make matched but led nowhere. vPIC contains a make literally named "GTI",
         # so "golf gti" gets its model token eaten and returns nothing. Fall back to
         # treating the whole phrase as a model.
@@ -273,11 +297,29 @@ async def search(query: str, limit: int = 8) -> list[dict]:
     # rank by whichever network call finished first, which is not deterministic.
     scored: list[tuple[tuple, str, str]] = []
     for cached_make in PREFETCH_MAKES:
-        for key, model in _score(_models.get(cached_make, []), needle):
+        pool = sorted({*_models.get(cached_make, []), *generations.curated_models(cached_make)})
+        for key, model in _score(pool, needle):
             scored.append((key, cached_make, model))
+    # Curated makes that are not in the prefetch list (BMW M3, Mazda MX-5).
+    for curated_make in generations.curated_makes():
+        if curated_make in PREFETCH_MAKES:
+            continue
+        for key, model in _score(generations.curated_models(curated_make), needle):
+            scored.append((key, curated_make, model))
 
     scored.sort(key=lambda row: row[0])
-    return [_result(_pretty(mk), model, year) for _, mk, model in scored[:limit]]
+
+    out = []
+    seen: set[str] = set()
+    for _, mk, model in scored:
+        for result in _results_for(_pretty(mk), model, year):
+            if result["id"] in seen:
+                continue
+            seen.add(result["id"])
+            out.append(result)
+        if len(out) >= limit:
+            break
+    return out[:limit]
 
 
 def cache_status() -> dict:

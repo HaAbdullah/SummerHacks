@@ -16,7 +16,7 @@ from app.models.schemas import (
     Stats,
 )
 from app.repositories import store
-from app.services import placement, tagging
+from app.services import generations, placement, tagging
 
 
 def _now() -> str:
@@ -27,42 +27,99 @@ def slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40] or "build"
 
 
-def car_id_for(make: str, model: str) -> str:
+def car_id_for(make: str, model: str, generation: str | None = None) -> str:
+    """A graph is keyed by GENERATION, not model — mods are generation-specific."""
+    if generation:
+        return generations.slug(make, model, generation)
     return slugify(f"{make} {model}")
 
 
 # --- graphs ------------------------------------------------------------------------
 
-def get_or_create_graph(make: str, model: str, year_range: str = "—") -> Graph:
+def get_or_create_graph(
+    make: str, model: str, generation: str | None = None, year: int | None = None
+) -> Graph:
     """getDAG. Creates the car and its stock root on first request.
 
     The frontend only ever calls this — there is no separate "create" call to forget.
-    """
-    car_id = car_id_for(make, model)
-    car = store.get("cars", car_id)
 
+    Resolution order: an explicit generation wins; a year picks the generation covering
+    it; otherwise the newest generation is used, since that is what people are most
+    likely modding.
+    """
+    record = _resolve(make, model, generation, year)
+    car_id = record["id"]
+
+    car = store.get("cars", car_id)
     if car is None:
-        car = _create_graph(car_id, make, model, year_range)
+        car = _create_graph(car_id, record)
 
     return Graph(car=Car(**car), nodes=_nodes_for(car_id))
 
 
-def _create_graph(car_id: str, make: str, model: str, year_range: str) -> dict:
+def _resolve(
+    make: str, model: str, generation: str | None, year: int | None
+) -> dict:
+    options = generations.for_model(make, model)
+
+    if generation:
+        for option in options:
+            if option["generation"].lower() == generation.strip().lower():
+                return option
+        # An unknown generation name is still usable — the user may be modding something
+        # we have not curated, and refusing would just block them.
+        return {
+            **options[0],
+            "id": generations.slug(make, model, generation),
+            "generation": generation,
+            "years": generation,
+            "curated": False,
+        }
+
+    if year is not None:
+        covering = generations.covering(make, model, year)
+        if covering:
+            return covering
+
+    return options[0]
+
+
+def get_or_create_by_car_id(car_id: str) -> Graph | None:
+    """Open a graph straight from a search result's id."""
+    car = store.get("cars", car_id)
+    if car is not None:
+        return Graph(car=Car(**car), nodes=_nodes_for(car_id))
+
+    record = generations.by_id(car_id)
+    if record is None:
+        return None
+
+    created = _create_graph(car_id, record)
+    return Graph(car=Car(**created), nodes=_nodes_for(car_id))
+
+
+def _create_graph(car_id: str, record: dict) -> dict:
     """createDAG. Every car starts with one stock root — the trunk builds grow from."""
     root_id = f"{car_id}-root"
     car = {
         "id": car_id,
-        "make": make.strip().title(),
-        "model": model.strip().title(),
-        "yearRange": year_range,
+        "make": record["make"],
+        "model": record["model"],
+        "generation": record["generation"],
+        "yearStart": record["yearStart"],
+        "yearEnd": record["yearEnd"],
+        "yearRange": record["years"],
+        "heroImage": record.get("heroImage"),
         "rootNodeId": root_id,
     }
     store.put("cars", car_id, car)
+    make, model = record["make"], record["model"]
+    year_range = record["years"]
 
     root = Node(
         id=root_id,
         carId=car_id,
-        title=f"Stock {car['model']}",
+        title=f"Stock {model}",
         parentIds=[],
         attributes=[],
         mods=Mods(),
