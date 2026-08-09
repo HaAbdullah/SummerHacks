@@ -1,45 +1,60 @@
-"""Real parts with real prices, per generation and mod slot.
+"""Real parts with real prices, stored in the database.
 
-Ahmed's build guides need a shopping list, not invented part numbers. This turns a node's
-four mod slots into candidate parts with prices, so a guide can say "Brembo NAO ceramic
-pads, $71.35" instead of hallucinating a catalogue.
+Ahmed's build guides need a shopping list, not invented part numbers. A node's four mod
+slots map onto rows here, so a guide can say "Brembo NAO ceramic pads, $71.35" instead of
+hallucinating a catalogue.
 
-Parts are curated per generation because fitment is generation-specific — the whole
-reason the graph is keyed that way.
+Parts live in the same store as everything else, so they query through Supabase when it
+is configured and the JSON file otherwise. They are keyed by generation slug because
+fitment is generation-specific — the whole reason the graph is keyed that way.
+
+Seeded from `data/parts.json` by `scripts/seed_parts.py`. That file is the editable
+source; the table is what gets read.
 """
 
 from __future__ import annotations
 
-import json
-from functools import lru_cache
-from pathlib import Path
-
 from app.models.schemas import MOD_SLOTS
-
-DATA_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "parts.json"
-
-
-@lru_cache(maxsize=1)
-def _table() -> dict[str, dict[str, list[dict]]]:
-    raw = json.loads(DATA_PATH.read_text(encoding="utf-8"))
-    return {car: slots for car, slots in raw.items() if not car.startswith("_")}
+from app.repositories import store
 
 
 def for_car(car_id: str) -> dict[str, list[dict]]:
-    """Every part we know for a generation, grouped by slot. Empty if uncurated."""
-    return _table().get(car_id, {})
+    """Every part for a generation, grouped by slot. Empty dict if uncurated."""
+    rows = store.find("parts", carId=car_id)
+    if not rows:
+        return {}
+
+    grouped: dict[str, list[dict]] = {}
+    for row in rows:
+        grouped.setdefault(row["slot"], []).append(row)
+
+    for slot in grouped:
+        grouped[slot].sort(key=lambda p: (p.get("category") or "", p["name"]))
+    return grouped
 
 
 def for_slot(car_id: str, slot: str) -> list[dict]:
-    return _table().get(car_id, {}).get(slot, [])
+    rows = store.find("parts", carId=car_id, slot=slot)
+    return sorted(rows, key=lambda p: (p.get("category") or "", p["name"]))
+
+
+def by_category(car_id: str, slot: str) -> dict[str, list[dict]]:
+    """Parts grouped by sub-category — timing, crankshaft, oil, pads, muffler.
+
+    Ahmed's guides read better ordered by subsystem than as one flat list.
+    """
+    grouped: dict[str, list[dict]] = {}
+    for part in for_slot(car_id, slot):
+        grouped.setdefault(part.get("category") or "other", []).append(part)
+    return grouped
 
 
 def estimate(car_id: str, mods: dict[str, str]) -> dict:
     """Candidate parts and a price range for a build's filled slots.
 
-    The range is deliberately a range, not a total: we cannot know which specific part
-    someone will buy, so quoting one number would be a guess dressed as a fact. `low` is
-    the cheapest part per filled slot, `high` the dearest.
+    A range, not a total: we cannot know which specific part someone buys, so quoting one
+    number would be a guess dressed as a fact. `low` sums the cheapest option per filled
+    slot, `high` the dearest.
     """
     catalogue = for_car(car_id)
     if not catalogue:
@@ -55,9 +70,10 @@ def estimate(car_id: str, mods: dict[str, str]) -> dict:
         if not candidates:
             continue
         slots[slot] = candidates
-        prices = [p["price"] for p in candidates]
-        low += min(prices)
-        high += max(prices)
+        prices = [p["price"] for p in candidates if p.get("price") is not None]
+        if prices:
+            low += min(prices)
+            high += max(prices)
 
     return {
         "carId": car_id,

@@ -104,6 +104,31 @@ create table if not exists replies (
 
 create index if not exists replies_post_idx on replies (post_id, created_at);
 
+-- --------------------------------------------------------------------------- parts
+
+-- Real parts with real prices, so a generated build guide can quote a catalogue instead
+-- of inventing part numbers. Grouped by the same four mod slots as everything else.
+--
+-- `car_id` deliberately has NO foreign key to cars. This is reference data keyed by
+-- generation slug, and it exists whether or not anyone has opened that generation's
+-- graph yet — a row in `cars` only appears on first visit. Adding the FK would mean
+-- parts could not be loaded until someone browsed the car.
+create table if not exists parts (
+  id         text primary key,
+  car_id     text not null,             -- generation slug, e.g. "toyota-corolla-e170"
+  slot       text not null check (slot in ('engine','exhaust','wheels','brakes')),
+  name       text not null,
+  brand      text,
+  category   text,                       -- timing · crankshaft · oil · pads · muffler …
+  price      numeric(10,2),
+  currency   text not null default 'USD',
+  source_url text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists parts_car_slot_idx on parts (car_id, slot);
+create index if not exists parts_category_idx on parts (car_id, category);
+
 -- --------------------------------------------------------------------------- stats
 
 -- getStats counts over these tables directly rather than loading every row into Python.

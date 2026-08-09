@@ -97,9 +97,23 @@ def get_generations(car_id: str) -> list[dict]:
     return generations.for_model(make, model)
 
 
-@router.get("/cars/{car_id}/parts", tags=["graph"])
-def get_parts(car_id: str) -> dict:
-    """Curated parts with prices for a generation, grouped by mod slot."""
+@router.get("/cars/{car_id}/parts", tags=["parts"])
+def get_parts(
+    car_id: str,
+    slot: str | None = Query(None, description="engine | exhaust | wheels | brakes"),
+    grouped: bool = Query(False, description="Group by sub-category within the slot"),
+) -> dict:
+    """Real parts with prices for a generation, from the parts table.
+
+    Without `slot`, returns everything grouped by mod slot. With `slot`, returns that
+    slot only — add `grouped=true` to break it down by sub-category (timing, crankshaft,
+    oil, pads, muffler), which is how a build guide reads best.
+    """
+    if slot:
+        if slot not in ("engine", "exhaust", "wheels", "brakes"):
+            raise HTTPException(400, f"'{slot}' is not a mod slot")
+        payload = parts.by_category(car_id, slot) if grouped else parts.for_slot(car_id, slot)
+        return {"carId": car_id, "slot": slot, "parts": payload}
     return {"carId": car_id, "slots": parts.for_car(car_id)}
 
 

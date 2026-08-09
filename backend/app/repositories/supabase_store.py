@@ -17,7 +17,8 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-TABLES = ("cars", "nodes", "posts", "replies")
+# Insert order matters: parents before children, so foreign keys hold.
+TABLES = ("cars", "nodes", "posts", "replies", "parts")
 
 # camelCase in the API  ->  snake_case in Postgres. Anything absent is identical in both.
 FIELD_MAP: dict[str, dict[str, str]] = {
@@ -51,6 +52,11 @@ FIELD_MAP: dict[str, dict[str, str]] = {
     "replies": {
         "postId": "post_id",
         "avatarColor": "avatar_color",
+        "createdAt": "created_at",
+    },
+    "parts": {
+        "carId": "car_id",
+        "sourceUrl": "source_url",
         "createdAt": "created_at",
     },
 }
@@ -103,6 +109,12 @@ def put(collection: str, item_id: str, value: dict) -> dict:
     payload = _to_db(collection, {**value, "id": item_id})
     _db().table(collection).upsert(payload).execute()
     return value
+
+
+def delete(collection: str, item_id: str) -> bool:
+    """Remove one row. Returns False if it was not there."""
+    result = _db().table(collection).delete().eq("id", item_id).execute()
+    return bool(result.data)
 
 
 def find(collection: str, **match: Any) -> list[dict]:
