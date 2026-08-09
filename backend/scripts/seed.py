@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.models.schemas import CommunityPost, Mods, Node, NodeStats, Reply  # noqa: E402
 from app.repositories import store  # noqa: E402
 from app.services import community_service, placement, tagging  # noqa: E402
-from scripts.seed_data import ALL_CARS  # noqa: E402
+from scripts.seed_data import ALL_CARS, CASTS, SYSTEM_AUTHOR  # noqa: E402
 
 NOW = datetime.now(timezone.utc)
 
@@ -29,9 +29,39 @@ def ago(hours: float) -> str:
     return (NOW - timedelta(hours=hours)).isoformat().replace("+00:00", "Z")
 
 
+def cast_for(car_id: str):
+    """Map a role placeholder to a handle for this car.
+
+    Node authorship uses the role's primary handle so "who built this" stays consistent
+    down a branch. Posts spread across the wider cast, seeded by the post id, so a node
+    reads as several people talking rather than one person narrating.
+    """
+    cast = CASTS[car_id]
+    primaries = {k: v for k, v in cast.items() if k != "extras"}
+    everyone = list(primaries.values()) + cast["extras"]
+
+    def primary(role: str) -> str:
+        return primaries.get(role, role)
+
+    def contributor(role: str, seed: str) -> str:
+        if role == SYSTEM_AUTHOR:
+            return SYSTEM_AUTHOR
+        # Deterministic, so reseeding does not reshuffle who said what.
+        h = 0
+        for char in f"{role}:{seed}":
+            h = (h * 33 + ord(char)) & 0xFFFFFFFF
+        # Weighted, not uniform: the person who built a node posts on it most, but the
+        # rest of the cast has to appear often enough that a node reads as a
+        # conversation rather than a monologue. Roughly 40/60.
+        return primary(role) if h % 5 < 2 else everyone[h % len(everyone)]
+
+    return primary, contributor
+
+
 def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
     """Turn one car spec into (car, nodes, posts, replies) keyed by id."""
     car_id = spec["id"]
+    primary, contributor = cast_for(car_id)
     # Every level-1 node hangs off the root, so the first node's parent is it.
     root_id = spec["nodes"][0][2][0]
 
@@ -55,7 +85,7 @@ def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
         attributes=[], mods=root_mods,
         summary="Factory baseline. The trunk everything grows from.",
         heroImage=f"https://picsum.photos/seed/{root_id}-hero/1000/560",
-        createdBy="modbranch", createdAt=ago(760), isRoot=True,
+        createdBy=SYSTEM_AUTHOR, createdAt=ago(760), isRoot=True,
         slot=None, level=0,
         stats=NodeStats(forks=0, notes=0, contributors=1, heat=1.0),
     ).model_dump()
@@ -66,7 +96,7 @@ def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
             id=node_id, carId=car_id, title=title, parentIds=parents,
             attributes=tagging.tags_for(mod_obj), mods=mod_obj, summary=summary,
             heroImage=f"https://picsum.photos/seed/{node_id}-hero/1000/560",
-            createdBy=author, createdAt=ago(hours), isRoot=False,
+            createdBy=primary(author), createdAt=ago(hours), isRoot=False,
             slot=placement.slot_for(mod_obj), level=placement.level_for(mod_obj),
             stats=NodeStats(forks=0, notes=0, contributors=1, heat=heat),
         ).model_dump()
@@ -76,9 +106,10 @@ def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
         for index, (author, kind, title, body, hours, opts) in enumerate(entries):
             post_id = f"p-{node_id}-{index}"
             x, y, w, h = community_service._canvas_defaults(kind, post_id)
+            who = contributor(author, post_id)
             posts[post_id] = CommunityPost(
-                id=post_id, nodeId=node_id, author=author,
-                avatarColor=community_service._avatar_color(author),
+                id=post_id, nodeId=node_id, author=who,
+                avatarColor=community_service._avatar_color(who),
                 kind=kind, title=title, body=body,
                 mediaUrl=(
                     f"https://picsum.photos/seed/{post_id}/800/500"
@@ -93,9 +124,10 @@ def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
     replies: dict[str, dict] = {}
     for index, (node_id, post_index, author, body, hours) in enumerate(spec["replies"]):
         reply_id = f"r-{node_id}-{post_index}-{index}"
+        who = contributor(author, reply_id)
         replies[reply_id] = Reply(
-            id=reply_id, postId=f"p-{node_id}-{post_index}", author=author,
-            avatarColor=community_service._avatar_color(author),
+            id=reply_id, postId=f"p-{node_id}-{post_index}", author=who,
+            avatarColor=community_service._avatar_color(who),
             body=body, createdAt=ago(hours),
         ).model_dump()
 

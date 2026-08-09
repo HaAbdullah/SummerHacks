@@ -420,14 +420,14 @@ CIVIC = {
         "h-hybrid": [
             ("kshitij", "text", "Why NA on a chassis built for boost",
              "Throttle response. The K24 gives up 60hp to the tuned Si but does exactly "
-             "what your right foot asks, instantly.", 55, {}),
+             "what your right foot asks, instantly.", 9, {}),
             ("kshitij", "voice", "K24 in the Si chassis, first drive",
              "Transcript: first proper drive after the swap. You can hear the ITBs over "
              "the exhaust at part throttle, which never happened in the FC shell.",
-             50, {"duration": 44}),
+             5, {"duration": 44}),
             ("ahmed", "text", "The brakes are overkill now",
              "330mm on a car that lost 80kg of turbo plumbing. Not complaining, but "
-             "you could run a smaller setup and save weight.", 45, {}),
+             "you could run a smaller setup and save weight.", 2, {}),
         ],
     },
     "replies": [
@@ -435,7 +435,7 @@ CIVIC = {
         ("h-15t", 2, "abdullah", "Front-mount fixed this completely for me. Worth the $600.", 560),
         ("h-k24", 0, "kshitij", "Those ITBs sound incredible. What throttle bodies?", 530),
         ("h-si-bbk", 0, "shoaib", "How are they on the street? Worried about cold bite.", 270),
-        ("h-hybrid", 0, "abdullah", "This is the most interesting build on the whole site.", 48),
+        ("h-hybrid", 0, "abdullah", "This is the most interesting build on the whole site.", 7),
     ],
 }
 
@@ -642,3 +642,45 @@ WRX = {
 
 
 ALL_CARS = [COROLLA, CIVIC, WRX]
+
+
+# --- who the community is -----------------------------------------------------------
+#
+# Placeholder names in the specs above (ahmed, abdullah, shoaib, kshitij) are ROLES, not
+# people. seed.py maps each role to a real handle per car, so the same role on the
+# Corolla and the Civic is a different person — otherwise one name appears on 47 posts
+# across three unrelated platforms and the whole thing reads as seeded.
+#
+# Handles are how people actually name themselves on car forums: platform, engine code,
+# or what they did to it. First names are rare and stand out.
+#
+# A few handles appear in more than one cast on purpose. People genuinely do follow two
+# platforms, and a community where nobody overlaps looks as artificial as one where
+# everybody does.
+
+CASTS = {
+    "toyota-corolla-e170": {
+        "ahmed":    "boosted_2zr",
+        "abdullah": "dailydriven_e170",
+        "shoaib":   "gravelspec",
+        "kshitij":  "rallybrain",
+        "extras":   ["torque_curve", "e170_owner", "slowcarfast", "nine_psi", "wrenchmonkey"],
+    },
+    "honda-civic-fc-fk-10th-gen": {
+        "ahmed":    "k20c2_si",
+        "abdullah": "flashpro_fc",
+        "shoaib":   "itb_addict",
+        "kshitij":  "swapped_not_stock",
+        "extras":   ["vtec_yo", "fk8envy", "civic_daily", "torque_curve", "boostleak"],
+    },
+    "subaru-wrx-va": {
+        "ahmed":    "fa20_stage2",
+        "abdullah": "va_commuter",
+        "shoaib":   "stage_car_sam",
+        "kshitij":  "e85_only",
+        "extras":   ["boxer_rumble", "awd_bias", "gravelspec", "protuned", "rodbearing"],
+    },
+}
+
+# The account that plants each car's stock root. Deliberately not a person.
+SYSTEM_AUTHOR = "modbranch"
