@@ -85,6 +85,7 @@ def create_post(node_id: str, req: CreatePostRequest) -> CommunityPost | None:
         title=req.title.strip(),
         body=body,
         mediaUrl=req.mediaUrl,
+        storagePath=req.storagePath,
         durationSec=req.durationSec,
         transcribed=transcribed,
         createdAt=_now(),

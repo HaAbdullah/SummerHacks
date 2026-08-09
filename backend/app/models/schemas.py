@@ -76,6 +76,9 @@ class CommunityPost(BaseModel):
     title: str
     body: str = ""
     mediaUrl: str | None = None
+    # Path inside the storage bucket. Kept so a file can be found or removed later —
+    # mediaUrl alone is not enough once it is a signed or CDN URL.
+    storagePath: str | None = None
     durationSec: int | None = None
     transcribed: bool = True
     createdAt: str
@@ -185,6 +188,7 @@ class CreatePostRequest(BaseModel):
     title: str
     body: str = ""
     mediaUrl: str | None = None
+    storagePath: str | None = None
     durationSec: int | None = None
     author: str = "Anonymous"
     canvasX: float | None = None

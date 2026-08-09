@@ -47,3 +47,4 @@ coverage/
 *.log
 npm-debug.log*
 backend/data/db.json
+backend/data/uploads/

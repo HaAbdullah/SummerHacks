@@ -2,10 +2,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
 from app.core.config import settings
-from app.services import vehicles
+from app.services import media, vehicles
 
 
 @asynccontextmanager
@@ -30,6 +31,12 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix=settings.api_prefix)
+
+# Serves uploads when Supabase Storage is not configured. With Supabase the URLs point at
+# the bucket instead and this mount is never hit.
+if not settings.use_supabase:
+    media.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    app.mount("/media", StaticFiles(directory=media.UPLOAD_DIR), name="media")
 
 
 @app.get("/")

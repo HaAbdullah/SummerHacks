@@ -6,7 +6,7 @@ to a 404. No business logic lives here.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Body, HTTPException, Query
+from fastapi import APIRouter, Body, File, Form, HTTPException, Query, UploadFile
 
 from app.models.schemas import (
     BuildModPayload,
@@ -27,6 +27,7 @@ from app.services import (
     community_service,
     generations,
     graph_service,
+    media,
     tagging,
 )
 
@@ -149,6 +150,54 @@ def get_posts(node_id: str) -> list[CommunityPost]:
 def create_post(node_id: str, req: CreatePostRequest) -> CommunityPost:
     """Media is converted to text on the way in — see services/transcription.py."""
     post = community_service.create_post(node_id, req)
+    if post is None:
+        raise HTTPException(404, f"No node '{node_id}'")
+    return post
+
+
+@router.post(
+    "/nodes/{node_id}/posts/upload",
+    response_model=CommunityPost,
+    status_code=201,
+    tags=["community"],
+)
+async def upload_post(
+    node_id: str,
+    file: UploadFile = File(..., description="Photo, sketch, voice clip or video"),
+    kind: str = Form(..., description="image | sketch | voice | video | blueprint"),
+    title: str = Form(...),
+    body: str = Form(""),
+    author: str = Form("Anonymous"),
+    durationSec: int | None = Form(None),
+) -> CommunityPost:
+    """Upload a real file — the physical-input path.
+
+    Multipart rather than JSON, because the browser sends the file itself. The file goes
+    to Supabase Storage (or local disk when Supabase is not configured) and the post
+    stores only its URL.
+    """
+    if graph_service.get_node(node_id) is None:
+        raise HTTPException(404, f"No node '{node_id}'")
+
+    data = await file.read()
+    try:
+        media.validate(file.filename or "", len(data))
+        stored = media.store(node_id, file.filename or "upload", data)
+    except media.UploadError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    post = community_service.create_post(
+        node_id,
+        CreatePostRequest(
+            kind=kind,
+            title=title,
+            body=body,
+            mediaUrl=stored["url"],
+            storagePath=stored["storagePath"],
+            durationSec=durationSec,
+            author=author,
+        ),
+    )
     if post is None:
         raise HTTPException(404, f"No node '{node_id}'")
     return post
