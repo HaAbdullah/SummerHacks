@@ -2,8 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { GitFork } from "lucide-react";
-import { motion } from "framer-motion";
-import { listItem } from "@/lib/motion";
 
 export interface FeaturedCar {
   id: string;
@@ -27,11 +25,7 @@ export function CarCard({ car }: { car: FeaturedCar }) {
     );
 
   return (
-    <motion.div
-      variants={listItem}
-      whileHover={{ y: -6 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 300, damping: 24 }}
+    <div
       role="link"
       tabIndex={0}
       onClick={go}
@@ -41,7 +35,7 @@ export function CarCard({ car }: { car: FeaturedCar }) {
           go();
         }
       }}
-      className="car-card-hover group relative cursor-pointer overflow-hidden rounded-[32px] border border-line bg-surface transition-[border-color,box-shadow] duration-500"
+      className="car-card-hover group relative cursor-pointer overflow-hidden rounded-[32px] border border-line bg-surface transition-all duration-500"
     >
       <div className="aspect-[4/5] overflow-hidden">
         <img
@@ -81,22 +75,19 @@ export function CarCard({ car }: { car: FeaturedCar }) {
               </div>
             ) : null}
           </div>
-          <motion.button
+          <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               go();
             }}
-            whileHover={{ scale: 1.12, rotate: -8 }}
-            whileTap={{ scale: 0.92 }}
-            transition={{ type: "spring", stiffness: 400, damping: 18 }}
             aria-label={`Fork ${car.make} ${car.model}`}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-fg"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-fg transition-transform hover:scale-110"
           >
             <GitFork size={20} />
-          </motion.button>
+          </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
