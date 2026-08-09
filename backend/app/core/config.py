@@ -27,6 +27,14 @@ class Settings(BaseSettings):
     supabase_service_key: str = ""
     supabase_bucket: str = "community-media"
 
+    # Optional durability for the local JSON store on hosts with no persistent disk
+    # (Render's free plan resets local files on every sleep/wake). Free, schema-less
+    # Redis via Upstash's REST API — leave blank and db.json just lives on local disk
+    # as before. This does not replace Supabase; it only keeps writes alive until
+    # Supabase is set up. Get both from console.upstash.com -> a Redis db -> REST API.
+    upstash_redis_rest_url: str = ""
+    upstash_redis_rest_token: str = ""
+
     # AI chatbox (node-level). Leave blank and chat falls back to a canned, still-useful
     # answer built from the node's own mods/notes — no key required to demo the UI.
     # The same model also orchestrates comparison tools; all comparison arithmetic remains
@@ -46,8 +54,14 @@ class Settings(BaseSettings):
         return bool(self.supabase_url.strip() and self.supabase_service_key.strip())
 
     @property
+    def use_remote_json(self) -> bool:
+        return bool(self.upstash_redis_rest_url.strip() and self.upstash_redis_rest_token.strip())
+
+    @property
     def storage_backend(self) -> str:
-        return "supabase" if self.use_supabase else "json"
+        if self.use_supabase:
+            return "supabase"
+        return "json+upstash" if self.use_remote_json else "json"
 
 
 settings = Settings()
