@@ -9,6 +9,7 @@ import {
   removeFromLibrary,
   type SavedMod,
 } from "@/lib/library";
+import { resolveMediaUrl } from "@/lib/media-url";
 
 export function SavedMods({ carId }: { carId: string }) {
   const router = useRouter();
@@ -62,10 +63,10 @@ export function SavedMods({ carId }: { carId: string }) {
                   onClick={() => open(mod)}
                   className="focus-ring flex min-w-0 flex-1 items-center gap-2.5 rounded-xl text-left"
                 >
-                  {mod.heroImage ? (
+                  {resolveMediaUrl(mod.heroImage) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={mod.heroImage}
+                      src={resolveMediaUrl(mod.heroImage)}
                       alt=""
                       className="h-10 w-10 shrink-0 rounded-xl object-cover"
                     />

@@ -10,6 +10,7 @@ import {
   LIBRARY_CHANGED_EVENT,
   toggleLibrary,
 } from "@/lib/library";
+import { resolveMediaUrl } from "@/lib/media-url";
 
 const SLOT_LABELS: Record<keyof Mods, string> = {
   engine: "Engine",
@@ -106,10 +107,10 @@ export function NodeInfoPanel({
 
         <div className="space-y-4">
           <div className="aspect-square w-full overflow-hidden rounded-2xl border border-line bg-surface">
-            {node.heroImage ? (
+            {resolveMediaUrl(node.heroImage) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={node.heroImage}
+                src={resolveMediaUrl(node.heroImage)}
                 alt={node.title}
                 className="h-full w-full object-cover"
               />

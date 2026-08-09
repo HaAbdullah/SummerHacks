@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import type { BuildNodeData } from "@/lib/types";
+import { resolveMediaUrl } from "@/lib/media-url";
 import { NODE_SIZE } from "./layout";
 
 export type BuildFlowNode = Node<
@@ -35,7 +36,7 @@ function BuildNodeComponent({ data }: NodeProps<BuildFlowNode>) {
   const compareSelected = compareIndex > 0;
   const active = !!(selected || highlighted || mergeSelected || compareSelected);
 
-  const imageUrl = build.heroImage;
+  const imageUrl = resolveMediaUrl(build.heroImage);
 
   const ringClass = compareSelected
     ? "border-accent-blue shadow-[0_0_0_3px_rgb(60_126_255_/_0.22)]"

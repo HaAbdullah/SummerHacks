@@ -43,7 +43,7 @@ const FEATURED_CARS: FeaturedCar[] = [
     nodeCount: "2.4K NODES",
     tagline:
       "The ultimate sandbox for street, track, and off-road builds.",
-    imageUrl: "http://localhost:8000/media/cars/corolla-01.jpg",
+    imageUrl: "/cars/corolla-01.jpg",
     avatarSeeds: ["a", "b", "c"],
     extraCount: 12,
   },
@@ -56,7 +56,7 @@ const FEATURED_CARS: FeaturedCar[] = [
     nodeCount: "1.6K NODES",
     tagline:
       "Performance-first branch built around VTEC tuning and track days.",
-    imageUrl: "http://localhost:8000/media/cars/civic-03.jpg",
+    imageUrl: "/cars/civic-03.jpg",
     avatarSeeds: ["d", "e"],
     extraCount: 5,
   },

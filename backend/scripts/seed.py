@@ -36,9 +36,10 @@ PRESERVED = (
     "task_dependencies",
 )
 
-# Local car photos under data/uploads/cars/ (served at /media/cars/...).
-# Absolute so the Next.js frontend (different origin) can load them.
-_MEDIA = "http://localhost:8000/media/cars"
+# Demo car photos live in frontend/public/cars/ so Vercel serves them as static
+# assets. Relative /cars/... URLs resolve against the Next origin in the browser
+# (localhost:3000 or the Vercel domain) — never hardcode localhost:8000.
+_MEDIA = "/cars"
 _COROLLA_IMGS = [f"{_MEDIA}/corolla-{i:02d}.jpg" for i in range(1, 9)]
 _CIVIC_IMGS = [f"{_MEDIA}/civic-{i:02d}.jpg" for i in range(1, 9)]
 

@@ -8,7 +8,7 @@
       "yearStart": 2016,
       "yearEnd": 2021,
       "yearRange": "2016\u20132021",
-      "heroImage": null,
+      "heroImage": "/cars/civic-01.jpg",
       "rootNodeId": "h-root"
     },
     "toyota-corolla-e170": {
@@ -19,7 +19,7 @@
       "yearStart": 2014,
       "yearEnd": 2019,
       "yearRange": "2014\u20132019",
-      "heroImage": null,
+      "heroImage": "/cars/corolla-01.jpg",
       "rootNodeId": "c-root"
     },
     "subaru-wrx-va": {
@@ -48,7 +48,7 @@
         "brakes": ""
       },
       "summary": "Factory baseline. The trunk everything grows from.",
-      "heroImage": "https://picsum.photos/seed/h-root-hero/1000/560",
+      "heroImage": "/cars/civic-01.jpg",
       "stats": {
         "forks": 3,
         "notes": 2,
@@ -78,7 +78,7 @@
         "brakes": ""
       },
       "summary": "FlashPro stage 1 on the base turbo motor. Cheapest real gain on this chassis.",
-      "heroImage": "https://picsum.photos/seed/h-15t-hero/1000/560",
+      "heroImage": "/cars/civic-02.jpg",
       "stats": {
         "forks": 1,
         "notes": 3,
@@ -110,7 +110,7 @@
         "brakes": ""
       },
       "summary": "K20C2 turned up. Factory LSD does the rest.",
-      "heroImage": "https://picsum.photos/seed/h-si-hero/1000/560",
+      "heroImage": "/cars/civic-03.jpg",
       "stats": {
         "forks": 1,
         "notes": 3,
@@ -141,7 +141,7 @@
         "brakes": ""
       },
       "summary": "NA K-series with cams and ITBs. Old-school Honda, revs forever.",
-      "heroImage": "https://picsum.photos/seed/h-k24-hero/1000/560",
+      "heroImage": "/cars/civic-04.jpg",
       "stats": {
         "forks": 1,
         "notes": 3,
@@ -173,7 +173,7 @@
         "brakes": ""
       },
       "summary": "Resonated. The 1.5T drones badly otherwise.",
-      "heroImage": "https://picsum.photos/seed/h-15t-quiet-hero/1000/560",
+      "heroImage": "/cars/civic-05.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -207,7 +207,7 @@
         "brakes": ""
       },
       "summary": "Downpipe and catback. Wakes the K20 up above 4000.",
-      "heroImage": "https://picsum.photos/seed/h-si-3in-hero/1000/560",
+      "heroImage": "/cars/civic-06.jpg",
       "stats": {
         "forks": 1,
         "notes": 3,
@@ -239,7 +239,7 @@
         "brakes": ""
       },
       "summary": "4-1 header on an NA motor. All of it is above 5000rpm.",
-      "heroImage": "https://picsum.photos/seed/h-k24-header-hero/1000/560",
+      "heroImage": "/cars/civic-07.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -273,7 +273,7 @@
         "brakes": ""
       },
       "summary": "18in on a 235. Fills the arch without wrecking the ride.",
-      "heroImage": "https://picsum.photos/seed/h-15t-18-hero/1000/560",
+      "heroImage": "/cars/civic-08.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -309,7 +309,7 @@
         "brakes": ""
       },
       "summary": "18in forged on 200TW. Same size, three kilos lighter.",
-      "heroImage": "https://picsum.photos/seed/h-si-track-hero/1000/560",
+      "heroImage": "/cars/civic-01.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -342,7 +342,7 @@
         "brakes": ""
       },
       "summary": "17s to keep the gearing usable on an NA motor.",
-      "heroImage": "https://picsum.photos/seed/h-k24-light-hero/1000/560",
+      "heroImage": "/cars/civic-02.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -377,7 +377,7 @@
         "brakes": "Street performance pads, stainless lines"
       },
       "summary": "Pads and lines. A complete, quiet, quick daily.",
-      "heroImage": "https://picsum.photos/seed/h-15t-street-hero/1000/560",
+      "heroImage": "/cars/civic-03.jpg",
       "stats": {
         "forks": 0,
         "notes": 2,
@@ -415,7 +415,7 @@
         "brakes": "4-pot front, 330mm two-piece rotors, track pads"
       },
       "summary": "4-pot 330mm. The Si's weak point solved.",
-      "heroImage": "https://picsum.photos/seed/h-si-bbk-hero/1000/560",
+      "heroImage": "/cars/civic-04.jpg",
       "stats": {
         "forks": 1,
         "notes": 3,
@@ -452,7 +452,7 @@
         "brakes": "4-pot front, 330mm two-piece rotors, track pads"
       },
       "summary": "Fusion: the Si's brakes and wheels under a naturally aspirated K24.",
-      "heroImage": "https://picsum.photos/seed/h-hybrid-hero/1000/560",
+      "heroImage": "/cars/civic-05.jpg",
       "stats": {
         "forks": 0,
         "notes": 3,
@@ -478,7 +478,7 @@
         "brakes": ""
       },
       "summary": "Factory baseline. The trunk everything grows from.",
-      "heroImage": "https://picsum.photos/seed/c-root-hero/1000/560",
+      "heroImage": "/cars/corolla-01.jpg",
       "stats": {
         "forks": 3,
         "notes": 2,
@@ -508,7 +508,7 @@
         "brakes": ""
       },
       "summary": "Intake, header and a conservative tune. The cheapest real power.",
-      "heroImage": "https://picsum.photos/seed/c-na-hero/1000/560",
+      "heroImage": "/cars/corolla-02.jpg",
       "stats": {
         "forks": 1,
         "notes": 3,
@@ -538,7 +538,7 @@
         "brakes": ""
       },
       "summary": "GT2860 at 8psi on the stock bottom end. Daily-able.",
-      "heroImage": "https://picsum.photos/seed/c-turbo-hero/1000/560",
+      "heroImage": "/cars/corolla-03.jpg",
       "stats": {
         "forks": 1,
         "notes": 3,
@@ -569,7 +569,7 @@
         "brakes": ""
       },
       "summary": "Forged internals, GT3071R at 18psi. No longer a commuter.",
-      "heroImage": "https://picsum.photos/seed/c-built-hero/1000/560",
+      "heroImage": "/cars/corolla-04.jpg",
       "stats": {
         "forks": 2,
         "notes": 2,
@@ -602,7 +602,7 @@
         "brakes": ""
       },
       "summary": "Fully resonated. Power without the drone on a long commute.",
-      "heroImage": "https://picsum.photos/seed/c-na-quiet-hero/1000/560",
+      "heroImage": "/cars/corolla-05.jpg",
       "stats": {
         "forks": 0,
         "notes": 2,
@@ -634,7 +634,7 @@
         "brakes": ""
       },
       "summary": "3in downpipe and catback. Loud under load, civil at cruise.",
-      "heroImage": "https://picsum.photos/seed/c-turbo-3in-hero/1000/560",
+      "heroImage": "/cars/corolla-06.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -666,7 +666,7 @@
         "brakes": ""
       },
       "summary": "3.5in turbo-back, no silencing. Track use only.",
-      "heroImage": "https://picsum.photos/seed/c-built-straight-hero/1000/560",
+      "heroImage": "/cars/corolla-07.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -698,7 +698,7 @@
         "brakes": ""
       },
       "summary": "3.5in routed high for stage use. Survives ruts.",
-      "heroImage": "https://picsum.photos/seed/c-built-clearance-hero/1000/560",
+      "heroImage": "/cars/corolla-08.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -731,7 +731,7 @@
         "brakes": ""
       },
       "summary": "17in cast on a road tyre. Daily proportions.",
-      "heroImage": "https://picsum.photos/seed/c-turbo-street-hero/1000/560",
+      "heroImage": "/cars/corolla-01.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -765,7 +765,7 @@
         "brakes": ""
       },
       "summary": "17in forged on semi-slicks. Unsprung weight over looks.",
-      "heroImage": "https://picsum.photos/seed/c-built-track-hero/1000/560",
+      "heroImage": "/cars/corolla-02.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -798,7 +798,7 @@
         "brakes": ""
       },
       "summary": "16in steel on all-terrain. Sidewall is the whole point.",
-      "heroImage": "https://picsum.photos/seed/c-built-gravel-hero/1000/560",
+      "heroImage": "/cars/corolla-03.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -833,7 +833,7 @@
         "brakes": "OEM+ pads, stainless lines"
       },
       "summary": "OEM+ pads and stainless lines. Finished street car.",
-      "heroImage": "https://picsum.photos/seed/c-turbo-daily-hero/1000/560",
+      "heroImage": "/cars/corolla-04.jpg",
       "stats": {
         "forks": 0,
         "notes": 2,
@@ -868,7 +868,7 @@
         "brakes": "4-pot front calipers, 320mm rotors"
       },
       "summary": "4-pot front on 320mm rotors. Survives a full session.",
-      "heroImage": "https://picsum.photos/seed/c-track-weapon-hero/1000/560",
+      "heroImage": "/cars/corolla-05.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -903,7 +903,7 @@
         "brakes": "Vented front discs, rally pads, hydraulic handbrake"
       },
       "summary": "Rally pads and a hydraulic handbrake. Stops on loose surface.",
-      "heroImage": "https://picsum.photos/seed/c-gravel-rally-hero/1000/560",
+      "heroImage": "/cars/corolla-06.jpg",
       "stats": {
         "forks": 1,
         "notes": 2,
@@ -939,7 +939,7 @@
         "brakes": "4-pot front, rally pads, hydraulic handbrake"
       },
       "summary": "Fusion: track brakes on gravel wheels, detuned to 14psi for reliability.",
-      "heroImage": "https://picsum.photos/seed/c-rally-hero/1000/560",
+      "heroImage": "/cars/corolla-07.jpg",
       "stats": {
         "forks": 0,
         "notes": 3,
@@ -1405,7 +1405,7 @@
       "kind": "image",
       "title": "Trim comparison, LX vs Si",
       "body": "Side by side. The Si brake and wheel package is worth buying into up front rather than retrofitting.",
-      "mediaUrl": "https://picsum.photos/seed/p-h-root-1/800/500",
+      "mediaUrl": "/cars/civic-01.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -1519,7 +1519,7 @@
       "kind": "image",
       "title": "25psi on the stock K20C2",
       "body": "Boost log screenshot. Held flat to redline once the intercooler was sorted.",
-      "mediaUrl": "https://picsum.photos/seed/p-h-si-2/800/500",
+      "mediaUrl": "/cars/civic-02.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -1557,7 +1557,7 @@
       "kind": "sketch",
       "title": "ITB linkage clearance",
       "body": "Sketch of where the linkage fouls the strut tower on an FC. Needs a spacer or a shortened arm.",
-      "mediaUrl": "https://picsum.photos/seed/p-h-k24-1/800/500",
+      "mediaUrl": "/cars/civic-03.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -1614,7 +1614,7 @@
       "kind": "image",
       "title": "Resonator position",
       "body": "Where the second resonator sits. This position was quiet; 300mm forward was not.",
-      "mediaUrl": "https://picsum.photos/seed/p-h-15t-quiet-1/800/500",
+      "mediaUrl": "/cars/civic-04.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -1709,7 +1709,7 @@
       "kind": "image",
       "title": "Header clearance to the rack",
       "body": "Tight but no contact. Photo taken with the engine at full load lean.",
-      "mediaUrl": "https://picsum.photos/seed/p-h-k24-header-1/800/500",
+      "mediaUrl": "/cars/civic-05.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -1747,7 +1747,7 @@
       "kind": "image",
       "title": "235/40 fitment, no spacers",
       "body": "Sits flush with the arch. No rubbing at full lock or over speed bumps.",
-      "mediaUrl": "https://picsum.photos/seed/p-h-15t-18-1/800/500",
+      "mediaUrl": "/cars/civic-06.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -1785,7 +1785,7 @@
       "kind": "image",
       "title": "Wheel weight on the scale",
       "body": "Forged 18s at 8.4kg against the 11.6kg stockers.",
-      "mediaUrl": "https://picsum.photos/seed/p-h-si-track-1/800/500",
+      "mediaUrl": "/cars/civic-07.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -1823,7 +1823,7 @@
       "kind": "sketch",
       "title": "Offset comparison sketch",
       "body": "What +45 versus +35 does to the arch gap on an FC.",
-      "mediaUrl": "https://picsum.photos/seed/p-h-k24-light-1/800/500",
+      "mediaUrl": "/cars/civic-08.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -1899,7 +1899,7 @@
       "kind": "video",
       "title": "Brake temps after a session",
       "body": "",
-      "mediaUrl": "https://picsum.photos/seed/p-h-si-bbk-1/800/500",
+      "mediaUrl": "/cars/civic-01.jpg",
       "storagePath": null,
       "durationSec": 41,
       "transcribed": false,
@@ -2013,7 +2013,7 @@
       "kind": "image",
       "title": "Stock engine bay, 2016",
       "body": "Reference shot before anything was touched. Useful for spotting what has actually changed in the photos further down the tree.",
-      "mediaUrl": "https://picsum.photos/seed/p-c-root-1/800/500",
+      "mediaUrl": "/cars/corolla-01.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -2032,7 +2032,7 @@
       "kind": "blueprint",
       "title": "Header routing diagram",
       "body": "Blueprint of the 4-2-1 primaries and where they clear the steering shaft. Useful if you are fabricating rather than buying.",
-      "mediaUrl": "https://picsum.photos/seed/p-c-na-0/800/500",
+      "mediaUrl": "/cars/corolla-02.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -2127,7 +2127,7 @@
       "kind": "image",
       "title": "Intercooler piping routing",
       "body": "Piping runs behind the bumper support rather than through it \u2014 no cutting, and it comes out again in twenty minutes.",
-      "mediaUrl": "https://picsum.photos/seed/p-c-turbo-2/800/500",
+      "mediaUrl": "/cars/corolla-03.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -2165,7 +2165,7 @@
       "kind": "sketch",
       "title": "Bearing clearance notes",
       "body": "Sketch of the clearances we ended up at after machining. Slightly loose on the mains for the boost target.",
-      "mediaUrl": "https://picsum.photos/seed/p-c-built-1/800/500",
+      "mediaUrl": "/cars/corolla-04.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -2203,7 +2203,7 @@
       "kind": "image",
       "title": "Tip alignment after the swap",
       "body": "Tips sit 8mm proud of the bumper cut. Looks intentional rather than like something fell off.",
-      "mediaUrl": "https://picsum.photos/seed/p-c-na-quiet-1/800/500",
+      "mediaUrl": "/cars/corolla-05.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -2222,7 +2222,7 @@
       "kind": "sketch",
       "title": "Downpipe clearance sketch",
       "body": "Where the 3in downpipe fouls the steering rack. Needs a dimple or you will feel it through the wheel at idle.",
-      "mediaUrl": "https://picsum.photos/seed/p-c-turbo-3in-0/800/500",
+      "mediaUrl": "/cars/corolla-06.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -2298,7 +2298,7 @@
       "kind": "image",
       "title": "Routing over the rear subframe",
       "body": "Photo of the high-clearance section. Roughly 90mm higher than the stock path at its lowest point.",
-      "mediaUrl": "https://picsum.photos/seed/p-c-built-clearance-0/800/500",
+      "mediaUrl": "/cars/corolla-07.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -2355,7 +2355,7 @@
       "kind": "image",
       "title": "Fitment at stock height",
       "body": "No rubbing, no spacers. Roughly a finger of gap at the front arch.",
-      "mediaUrl": "https://picsum.photos/seed/p-c-turbo-street-1/800/500",
+      "mediaUrl": "/cars/corolla-08.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -2393,7 +2393,7 @@
       "kind": "image",
       "title": "Wheel weight comparison",
       "body": "Forged 17s next to the stock 16s on a scale \u2014 3.1kg lighter per corner.",
-      "mediaUrl": "https://picsum.photos/seed/p-c-built-track-1/800/500",
+      "mediaUrl": "/cars/corolla-01.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -2431,7 +2431,7 @@
       "kind": "image",
       "title": "Spacer fitment at full lock",
       "body": "+30mm spacers, no rubbing at full lock after rolling the front lip. Photo is at full steering deflection.",
-      "mediaUrl": "https://picsum.photos/seed/p-c-built-gravel-1/800/500",
+      "mediaUrl": "/cars/corolla-02.jpg",
       "storagePath": null,
       "durationSec": null,
       "transcribed": true,
@@ -2507,7 +2507,7 @@
       "kind": "video",
       "title": "Session at Mosport, lap 6",
       "body": "",
-      "mediaUrl": "https://picsum.photos/seed/p-c-track-weapon-1/800/500",
+      "mediaUrl": "/cars/corolla-03.jpg",
       "storagePath": null,
       "durationSec": 64,
       "transcribed": false,
@@ -2583,7 +2583,7 @@
       "kind": "video",
       "title": "Gravel test run \u2014 second gear pulls",
       "body": "",
-      "mediaUrl": "https://picsum.photos/seed/p-c-rally-1/800/500",
+      "mediaUrl": "/cars/corolla-04.jpg",
       "storagePath": null,
       "durationSec": 52,
       "transcribed": false,
