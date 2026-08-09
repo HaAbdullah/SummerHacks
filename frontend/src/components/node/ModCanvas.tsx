@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ReactFlow,
@@ -16,6 +16,7 @@ import { Mic, Upload, PenLine, ZoomIn, ZoomOut } from "lucide-react";
 import { addNote, updateNotePosition, uploadNote } from "@/lib/api";
 import { resolveMediaUrl } from "@/lib/media-url";
 import type { Note } from "@/lib/types";
+import { BlueprintVersionActions } from "@/components/node/BlueprintVersionActions";
 
 const YOU = "#5e6ad2";
 
@@ -124,10 +125,12 @@ function GalleryCard({
   note,
   carId,
   nodeId,
+  onBlueprintVersionCreated,
 }: {
   note: Note;
   carId: string;
   nodeId: string;
+  onBlueprintVersionCreated: (created: Note) => void;
 }) {
   const router = useRouter();
   const mediaSrc = resolveMediaUrl(note.mediaUrl);
@@ -192,6 +195,17 @@ function GalleryCard({
         </p>
       )}
 
+      {note.kind === "blueprint" && mediaSrc && (
+        <div className="mb-3 mt-2 border-t border-line pt-3">
+          <BlueprintVersionActions
+            note={note}
+            nodeId={nodeId}
+            onCreated={onBlueprintVersionCreated}
+            compact
+          />
+        </div>
+      )}
+
       <div className="mt-auto flex items-center justify-between pt-1">
         <span className="text-[10px] text-muted-2">
           {timeAgo(note.createdAt)}
@@ -211,14 +225,24 @@ function GalleryCard({
 }
 
 type PostingFlowNode = Node<
-  { note: Note; carId: string; nodeId: string },
+  {
+    note: Note;
+    carId: string;
+    nodeId: string;
+    onBlueprintVersionCreated: (created: Note) => void;
+  },
   "posting"
 >;
 
 function PostingNode({ data }: NodeProps<PostingFlowNode>) {
   return (
     <div style={{ width: CARD_W }}>
-      <GalleryCard note={data.note} carId={data.carId} nodeId={data.nodeId} />
+      <GalleryCard
+        note={data.note}
+        carId={data.carId}
+        nodeId={data.nodeId}
+        onBlueprintVersionCreated={data.onBlueprintVersionCreated}
+      />
     </div>
   );
 }
@@ -279,6 +303,11 @@ function BoardInner({
     [],
   );
 
+  const onBlueprintVersionCreated = useCallback(
+    (created: Note) => onNotesChange([created, ...notes]),
+    [notes, onNotesChange],
+  );
+
   // Merge `notes` into React Flow's node state: keep existing nodes' current
   // (possibly user-dragged) positions untouched, only assign a fresh clump
   // position to ids we've never seen before.
@@ -290,7 +319,10 @@ function BoardInner({
       for (const nt of notes) {
         const existing = byId.get(nt.id);
         if (existing) {
-          next.push({ ...existing, data: { note: nt, carId, nodeId } });
+          next.push({
+            ...existing,
+            data: { note: nt, carId, nodeId, onBlueprintVersionCreated },
+          });
         } else {
           const pos = clumpPositionForOrdinal(ordinal, nt.id);
           ordinal += 1;
@@ -298,13 +330,13 @@ function BoardInner({
             id: nt.id,
             type: "posting",
             position: pos,
-            data: { note: nt, carId, nodeId },
+            data: { note: nt, carId, nodeId, onBlueprintVersionCreated },
           });
         }
       }
       return next;
     });
-  }, [notes, carId, nodeId, setRfNodes]);
+  }, [notes, carId, nodeId, onBlueprintVersionCreated, setRfNodes]);
 
   useEffect(() => {
     if (!entered.current && rfNodes.length > 0) {

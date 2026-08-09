@@ -176,7 +176,8 @@ Primary pages:
 - `/search-bar`: search bar prototype page.
 - `/ecosystem`: analytics dashboard.
 - `/garage/[carId]`: graph/navigator view.
-- `/garage/[carId]/node/[nodeId]`: node detail and community/AI tools.
+- `/garage/[carId]/node/[nodeId]`: node detail and community/AI tools, including
+  blueprint source downloads and edited branch-version uploads.
 - `/garage/[carId]/node/[nodeId]/contribution/[noteId]`: post/reply detail.
 - `/beyond-reality`: Three.js visual experience.
 - `/blueprints/engine`: engine-image upload, Gemini analysis, inspection overlays, blueprint preview, JPEG download, and generation-aware handoff into a new discussion node with the blueprint attached as a post.

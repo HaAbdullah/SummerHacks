@@ -196,6 +196,7 @@ export async function uploadNote(
   meta: {
     kind: MediaKind;
     author: string;
+    title?: string;
     body?: string;
     durationSec?: number;
     filename?: string;
@@ -206,7 +207,7 @@ export async function uploadNote(
   const form = new FormData();
   form.append("file", file, filename);
   form.append("kind", meta.kind);
-  form.append("title", defaultTitle(meta.kind, meta.body));
+  form.append("title", meta.title ?? defaultTitle(meta.kind, meta.body));
   form.append("body", meta.body ?? "");
   form.append("author", meta.author);
   if (meta.durationSec != null) form.append("durationSec", String(meta.durationSec));
