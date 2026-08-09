@@ -120,10 +120,11 @@ COROLLA = {
              "will hear it rattling at every light.", 610, {}),
         ],
         "c-turbo": [
-            ("ahmed", "voice", "Corolla revving — 8psi spool",
-             "Transcript: cold start, then three pulls to redline. You can hear the "
-             "turbo spool come in around 3200rpm and the blow-off between shifts. No "
-             "rattle on overrun, so the wastegate is holding.", 615, {"duration": 27}),
+            ("ahmed", "voice", "Stock exhaust, for reference",
+             "Grabbed this before the catback went on so there's something to compare "
+             "against later. Turbo's already in, exhaust is completely stock. You can "
+             "hear it spool around 3200 but the stock box eats most of it.",
+             615, {"duration": 55, "audio": "stock.mp3", "as": "boosted_2zr"}),
             ("shoaib", "text", "Boost ceiling on a stock block",
              "8psi has held for 20k miles on mine. Everyone I know who pushed past 10 on "
              "a stock bottom end lost ringlands within a season.", 610, {}),
@@ -148,6 +149,11 @@ COROLLA = {
              "something fell off.", 11, {"media": True}),
         ],
         "c-turbo-3in": [
+            ("ahmed", "voice", "Check this out — 3in catback on",
+             "Same car, same road, same pull as the clip on the stock node. One week "
+             "later. Turn it up, the difference is not subtle. Spool is way more "
+             "obvious now that the muffler isn't smothering it.",
+             528, {"duration": 56, "audio": "modded.mp3", "as": "boosted_2zr"}),
             ("kshitij", "sketch", "Downpipe clearance sketch",
              "Where the 3in downpipe fouls the steering rack. Needs a dimple or you will "
              "feel it through the wheel at idle.", 530, {"media": True}),
@@ -237,6 +243,9 @@ COROLLA = {
         ("c-turbo", 0, "kshitij", "That spool sounds way earlier than mine. Twin-scroll manifold?", 612),
         ("c-rally", 0, "shoaib", "Smart call. Everyone chases peak numbers then cooks the motor on stage 3.", 4),
         ("c-built-gravel", 0, "abdullah", "Any speedo error on the taller tyre?", 412),
+        ("c-turbo-3in", 0, "shoaib", "Okay that actually sounds mean. How is it at 70 on the highway?", 520),
+        ("c-turbo-3in", 0, "abdullah", "Went back and played the stock one right after. Not even the same car.", 515),
+        ("c-turbo", 0, "kshitij", "Appreciate you posting the before. Nobody ever does.", 600),
     ],
 }
 
@@ -523,9 +532,11 @@ WRX = {
              505, {"media": True}),
         ],
         "w-stage1": [
-            ("shoaib", "voice", "WRX stage 1, third gear pull",
-             "Transcript: OTS map on 93. You can hear the boxer offbeat clearly through "
-             "the stock exhaust — no drone, just more of it.", 515, {"duration": 26}),
+            ("shoaib", "voice", "Stock VA, before anything",
+             "Baseline recording. Stage 1 map, everything else factory. That boxer "
+             "offbeat is there but the stock muffler is doing its job a bit too well. "
+             "Posting it so the turbo-back clip further down has something to sit "
+             "against.", 515, {"duration": 29, "audio": "stockx2.mp3", "as": "stage_car_sam"}),
             ("shoaib", "text", "OTS maps are genuinely safe here",
              "Cobb's stage 1 has been run on thousands of these. If you are nervous "
              "about tuning, this is the one to start on.", 512, {}),
@@ -565,6 +576,11 @@ WRX = {
             ("ahmed", "text", "The map assumes the downpipe",
              "Do not run a stage 2 map on a stock downpipe. It will knock, and the "
              "logs will show it immediately.", 415, {}),
+            ("shoaib", "voice", "Turbo-back on — listen to this",
+             "Same stretch of road, same gear, right after the downpipe and catback "
+             "went on. Compare it to the stock clip up on the Stage 1 node. This is "
+             "what everyone means when they say the downpipe is the mod that matters.",
+             408, {"duration": 54, "audio": "moddedx2.mp3", "as": "stage_car_sam"}),
             ("kshitij", "image", "Catted downpipe fitment",
              "Photo of the catted section. Passes inspection and only costs about 5whp "
              "against catless.", 410, {"media": True}),
@@ -637,6 +653,8 @@ WRX = {
         ("w-stage2-bbk", 0, "kshitij", "What pads are you running for endurance?", 192),
         ("w-stage-rally", 0, "ahmed", "Detuning for grip is the most underrated call in this whole site.", 22),
         ("w-big-gravel", 0, "abdullah", "Where do you even find 15in gravel wheels for a VA?", 312),
+        ("w-stage2-tb", 1, "kshitij", "That rumble is exactly why I bought one of these. Sold.", 400),
+        ("w-stage1", 0, "kshitij", "Good shout posting the baseline. Makes the comparison actually mean something.", 505),
     ],
 }
 

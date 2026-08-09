@@ -35,6 +35,12 @@ app.add_middleware(
 
 app.include_router(router, prefix=settings.api_prefix)
 
+# Committed demo audio — the real exhaust recordings on the seeded voice notes. Always
+# mounted, unlike /media: these ship with the repo rather than being uploaded, so they
+# have to work on a read-only deploy with no Supabase.
+if media.AUDIO_DIR.exists():
+    app.mount("/audio", StaticFiles(directory=media.AUDIO_DIR), name="audio")
+
 # Serves uploads when Supabase Storage is not configured. With Supabase the URLs point at
 # the bucket instead and this mount is never hit.
 if not settings.use_supabase:

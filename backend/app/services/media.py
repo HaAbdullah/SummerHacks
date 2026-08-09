@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "uploads"
 
+# Committed demo audio, served at /audio. Distinct from uploads: these ship with the
+# repo, so they play on a read-only deploy where nothing can be written.
+AUDIO_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "audio"
+
 # A voice note or a phone photo is comfortably under this; a long video is not. The cap
 # exists so one upload cannot exhaust the dyno's memory.
 MAX_BYTES = 25 * 1024 * 1024

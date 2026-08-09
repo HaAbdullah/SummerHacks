@@ -106,13 +106,18 @@ def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
         for index, (author, kind, title, body, hours, opts) in enumerate(entries):
             post_id = f"p-{node_id}-{index}"
             x, y, w, h = community_service._canvas_defaults(kind, post_id)
-            who = contributor(author, post_id)
+            # A pinned author overrides the cast spread. Before/after recordings claim
+            # to be the same person's car, so they must carry the same handle.
+            who = opts.get("as") or contributor(author, post_id)
             posts[post_id] = CommunityPost(
                 id=post_id, nodeId=node_id, author=who,
                 avatarColor=community_service._avatar_color(who),
                 kind=kind, title=title, body=body,
                 mediaUrl=(
-                    f"https://picsum.photos/seed/{post_id}/800/500"
+                    # Real committed audio wins over a placeholder image: these are the
+                    # clips a judge will actually press play on.
+                    f"/audio/{opts['audio']}" if opts.get("audio")
+                    else f"https://picsum.photos/seed/{post_id}/800/500"
                     if opts.get("media") else None
                 ),
                 durationSec=opts.get("duration"),
@@ -124,7 +129,7 @@ def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
     replies: dict[str, dict] = {}
     for index, (node_id, post_index, author, body, hours) in enumerate(spec["replies"]):
         reply_id = f"r-{node_id}-{post_index}-{index}"
-        who = contributor(author, reply_id)
+        who = contributor(author, reply_id)  # replies stay spread across the cast
         replies[reply_id] = Reply(
             id=reply_id, postId=f"p-{node_id}-{post_index}", author=who,
             avatarColor=community_service._avatar_color(who),
