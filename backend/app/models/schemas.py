@@ -111,6 +111,11 @@ class Node(BaseModel):
     createdBy: str
     createdAt: str
     isRoot: bool = False
+    # Which mod slot this node introduces, and its layer. The graph is layered so each
+    # step down changes exactly one slot: engine (1), exhaust (2), wheels (3), brakes
+    # (4). Root is slot=None, level=0.
+    slot: str | None = None
+    level: int = 0
 
 
 class Car(BaseModel):

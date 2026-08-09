@@ -72,10 +72,21 @@ def get_stats(car_id: str) -> Stats:
     return stats
 
 
+@router.get("/attributes", tags=["graph"])
+def get_all_attributes() -> list[dict]:
+    """getAttributes — the full tag vocabulary, four groups in layer order."""
+    return tagging.attribute_groups()
+
+
 @router.get("/cars/{car_id}/attributes", tags=["graph"])
 def get_attribute_groups(car_id: str) -> list[dict]:
-    """Filter panel groups — the four mod slots and their tags."""
-    return tagging.attribute_groups()
+    """getAttributes for one car — only tags in use, with counts.
+
+    Filtering on a tag no node carries would empty the graph, so those are omitted.
+    """
+    if graph_service.get_car(car_id) is None:
+        raise HTTPException(404, f"No car '{car_id}'")
+    return tagging.attribute_groups(graph_service.raw_nodes(car_id))
 
 
 # --- nodes -------------------------------------------------------------------------

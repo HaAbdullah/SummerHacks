@@ -1,27 +1,33 @@
 """Work out where a new build belongs in the DAG.
 
-This is the hard part of createNode. The user contributes "K24 turbo swap" and should not
-have to understand the graph — the server finds the parent.
+The graph is LAYERED: each level introduces exactly one mod slot, always in the same
+order.
 
-The rule: a build's parent is the existing node it most closely extends. A fork keeps
-most of its parent's mods and changes one — so a candidate is scored as
+    level 0   root, stock, no mods
+    level 1   engine
+    level 2   exhaust
+    level 3   wheels
+    level 4   brakes
 
-    (slots carried over unchanged) - (slots that contradict the parent)
+So a node differs from its parent in exactly one slot, and which slot is fixed by its
+depth. Walking down a branch reads as one decision per step — engine, then exhaust, then
+wheels, then brakes — instead of a jumble of changes at every hop.
 
-Requiring identical values in every shared slot would be wrong: changing the brakes on a
-turbo build still makes it a child of the turbo build, not a sibling of the root.
+A build's own slot is the DEEPEST slot it fills. Its parent is the node carrying the same
+mods minus that slot. If a build skips a slot (engine and brakes, no exhaust or wheels)
+its parent is simply the nearest shallower node that matches — levels may skip, but the
+order never reverses.
 
-A candidate must score above zero — at least one mod carried over, and more kept than
-changed. Ties are broken by the deeper node, so a build lands at the end of the branch it
-continues rather than up near the root.
-
-If two branches tie and neither is an ancestor of the other, the new build genuinely
-combines them: it gets BOTH as parents, which is a merge.
+Merges are the one exception: passing two parentIds explicitly creates a fusion, which by
+definition draws from two branches and cannot sit on a single layer.
 """
 
 from __future__ import annotations
 
-from app.models.schemas import Mods
+from app.models.schemas import MOD_SLOTS, Mods
+
+# The layer order. Index in this tuple IS the node's level.
+SLOT_ORDER = MOD_SLOTS
 
 
 def _filled(mods: dict | Mods) -> dict[str, str]:
@@ -34,20 +40,19 @@ def _filled(mods: dict | Mods) -> dict[str, str]:
     }
 
 
-def _depth(node_id: str, by_id: dict[str, dict]) -> int:
-    """Longest path back to a root. Guarded against cycles."""
-    seen: set[str] = set()
+def slot_for(mods: dict | Mods) -> str | None:
+    """The slot a build introduces — the deepest one it fills. None for a stock build."""
+    filled = _filled(mods)
+    for slot in reversed(SLOT_ORDER):
+        if slot in filled:
+            return slot
+    return None
 
-    def walk(nid: str) -> int:
-        if nid in seen:
-            return 0
-        seen.add(nid)
-        node = by_id.get(nid)
-        if not node or not node.get("parentIds"):
-            return 0
-        return 1 + max(walk(pid) for pid in node["parentIds"])
 
-    return walk(node_id)
+def level_for(mods: dict | Mods) -> int:
+    """0 for stock, else 1-4 by which slot the build introduces."""
+    slot = slot_for(mods)
+    return SLOT_ORDER.index(slot) + 1 if slot else 0
 
 
 def _ancestors(node_id: str, by_id: dict[str, dict]) -> set[str]:
@@ -62,64 +67,62 @@ def _ancestors(node_id: str, by_id: dict[str, dict]) -> set[str]:
     return out
 
 
-def find_parents(new_mods: Mods, nodes: list[dict]) -> list[str]:
-    """Return the parent ids for a build with these mods.
+def _depth(node_id: str, by_id: dict[str, dict]) -> int:
+    seen: set[str] = set()
 
-    Empty list means it belongs at the root — only when no node exists at all.
-    """
+    def walk(nid: str) -> int:
+        if nid in seen:
+            return 0
+        seen.add(nid)
+        node = by_id.get(nid)
+        if not node or not node.get("parentIds"):
+            return 0
+        return 1 + max(walk(pid) for pid in node["parentIds"])
+
+    return walk(node_id)
+
+
+def find_parents(new_mods: Mods, nodes: list[dict]) -> list[str]:
+    """Return parent ids for a build with these mods, keeping the layer order intact."""
     if not nodes:
         return []
 
-    by_id = {n["id"]: n for n in nodes}
+    roots = [n["id"] for n in nodes if not n.get("parentIds")]
     target = _filled(new_mods)
 
     if not target:
-        # No mods described: hang it off the root rather than guessing.
-        roots = [n["id"] for n in nodes if not n.get("parentIds")]
         return roots[:1]
 
-    candidates: list[tuple[int, int, int, str]] = []
-    for node in nodes:
-        node_mods = _filled(node.get("mods", {}))
-        if not node_mods:
-            continue
+    own_slot = slot_for(new_mods)
+    own_level = SLOT_ORDER.index(own_slot)
 
-        kept = sum(1 for slot, value in node_mods.items() if target.get(slot) == value)
-        changed = sum(
-            1
-            for slot, value in node_mods.items()
-            if slot in target and target[slot] != value
-        )
+    # Everything this build carries from shallower layers. Its parent must match this
+    # exactly — that is what makes the new node a one-slot step down.
+    inherited = {
+        slot: value
+        for slot, value in target.items()
+        if SLOT_ORDER.index(slot) < own_level
+    }
 
-        # Nothing carried over, or more rewritten than kept — a different build, not an
-        # extension of this one.
-        if kept == 0 or changed > kept:
-            continue
-        candidates.append((kept, -changed, _depth(node["id"], by_id), node["id"]))
+    # Walk back through the layers: prefer a parent carrying every inherited mod, then
+    # settle for progressively shallower ancestors if that node was never created.
+    for cutoff in range(own_level, -1, -1):
+        wanted = {
+            slot: value
+            for slot, value in inherited.items()
+            if SLOT_ORDER.index(slot) < cutoff
+        }
+        matches = [
+            n["id"]
+            for n in nodes
+            if _filled(n.get("mods", {})) == wanted and n["id"] not in roots
+        ]
+        if matches:
+            by_id = {n["id"]: n for n in nodes}
+            matches.sort(key=lambda nid: (-_depth(nid, by_id), nid))
+            return matches[:1]
 
-    if not candidates:
-        roots = [n["id"] for n in nodes if not n.get("parentIds")]
-        return roots[:1]
-
-    # Most carried over wins, then fewest contradicted, then the deeper node.
-    candidates.sort(key=lambda c: (-c[0], -c[1], -c[2], c[3]))
-    best_rank = candidates[0][:2]
-    best = [(c[0], c[2], c[3]) for c in candidates if c[:2] == best_rank]
-
-    if len(best) == 1:
-        return [best[0][2]]
-
-    # Several equally-good parents. Keep only those that are not ancestors of each
-    # other — a node and its own ancestor is not a merge, it is one lineage.
-    chosen: list[str] = []
-    for _, _, node_id in best:
-        if any(node_id in _ancestors(other, by_id) for other in chosen):
-            continue
-        chosen = [c for c in chosen if c not in _ancestors(node_id, by_id)]
-        chosen.append(node_id)
-
-    # Two distinct branches combined == a merge. Cap at two to keep lineage readable.
-    return chosen[:2] if chosen else [best[0][2]]
+    return roots[:1]
 
 
 def common_ancestor(a_id: str, b_id: str, nodes: list[dict]) -> str | None:

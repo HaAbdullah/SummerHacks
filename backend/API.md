@@ -20,6 +20,26 @@ there is no separate edges array. One parent = a fork, two = a merge.
 **Node** — one build. Four mod slots, nothing else: `engine`, `exhaust`, `wheels`,
 `brakes`. Every node has a custom string id used by every other call.
 
+### The graph is layered — one slot per level
+
+| level | slot | example |
+|---|---|---|
+| 0 | — | Stock Corolla |
+| 1 | `engine` | Turbo |
+| 2 | `exhaust` | Turbo · 3in Catback |
+| 3 | `wheels` | Turbo · Street Wheels |
+| 4 | `brakes` | Turbo Daily |
+
+A node adds **exactly one slot** to its parent and repeats the rest verbatim, so walking
+down a branch reads as one decision per step. Every node carries `slot` and `level` —
+render layers straight off those rather than computing depth.
+
+`createNode` enforces this: a build's slot is the deepest one it fills, and its parent is
+the node carrying the same mods minus that slot.
+
+**Merges are the exception.** Passing two `parentIds` creates a fusion, which by
+definition draws from two branches and cannot sit on one layer. `n-rally` is the demo case.
+
 **Post** — one community contribution on a node: image, sketch, voice, video, blueprint
 or text. Whatever the kind, it is stored with a text `body`, so search and AI only ever
 handle text.
@@ -45,7 +65,8 @@ tag traces back to one slot (`engine-turbo`, `brakes-bbk`, `wheels-allterrain`).
 | GET | `/cars/{carId}` | One car |
 | GET | `/cars/{carId}/graph` | getDAG by id |
 | GET | `/cars/{carId}/stats` | **getStats** — real counts |
-| GET | `/cars/{carId}/attributes` | Filter panel groups |
+| GET | `/attributes` | **getAttributes** — full tag vocabulary |
+| GET | `/cars/{carId}/attributes` | **getAttributes** for one car — tags in use, with counts |
 | POST | `/cars/{carId}/nodes` | **createNode** — auto-places if `parentIds` omitted |
 | GET | `/nodes/{nodeId}` | **getNode** — build + posts + children |
 | GET | `/nodes/{nodeId}/posts` | Posts on a node |
@@ -78,7 +99,7 @@ forget it.
       "id": "n-rally",
       "carId": "toyota-corolla",
       "title": "Turbo Rally Build",
-      "parentIds": ["n-built", "n-gravel"],
+      "parentIds": ["n-track-weapon", "n-gravel-rally"],
       "attributes": ["brakes-bbk", "brakes-pads", "engine-swap", "engine-turbo", "exhaust-other", "wheels-allterrain"],
       "mods": {
         "engine": "Built bottom end, forged rods and pistons, GT3071R at 14psi for reliability",
@@ -91,7 +112,9 @@ forget it.
       "stats": { "forks": 0, "notes": 2, "contributors": 1, "heat": 0.95 },
       "createdBy": "kshitij",
       "createdAt": "2026-08-05T00:56:18Z",
-      "isRoot": false
+      "isRoot": false,
+      "slot": "brakes",
+      "level": 4
     }
   ]
 }
@@ -101,17 +124,17 @@ forget it.
 
 ---
 
-## GET `/nodes/n-turbo` — getNode
+## GET `/nodes/n-turbo-3in` — getNode
 
 Everything above, plus:
 
 ```json
 {
-  "childIds": ["n-built"],
+  "childIds": ["n-turbo-street"],
   "posts": [
     {
       "id": "post-rev-1",
-      "nodeId": "n-turbo",
+      "nodeId": "n-turbo-3in",
       "author": "ahmed",
       "avatarColor": "hsl(200 45% 42%)",
       "kind": "voice",
@@ -145,16 +168,28 @@ Every number is counted from stored records. Nothing is estimated.
 ```json
 {
   "carId": "toyota-corolla",
-  "builds": 8,
-  "mods": 21,
+  "builds": 15,
+  "mods": 36,
   "contributors": 5,
   "active24h": 3,
   "posts": 13,
   "replies": 5,
   "merges": 1,
-  "modsBySlot": { "engine": 4, "exhaust": 6, "brakes": 6, "wheels": 5 },
-  "postsByKind": { "voice": 3, "text": 4, "image": 3, "sketch": 1, "video": 1, "blueprint": 1 },
-  "deepestChain": 4,
+  "modsBySlot": {
+    "engine": 14,
+    "exhaust": 11,
+    "wheels": 7,
+    "brakes": 4
+  },
+  "postsByKind": {
+    "voice": 3,
+    "text": 4,
+    "image": 3,
+    "sketch": 1,
+    "video": 1,
+    "blueprint": 1
+  },
+  "deepestChain": 5,
   "hottestNodeId": "n-root"
 }
 ```
@@ -180,22 +215,17 @@ anything in the last 24 hours.
 }
 ```
 
-**Omit `parentIds` and the server places the build itself.** A fork keeps most of its
-parent's mods and changes one, so candidates are scored
+**Omit `parentIds` and the server places the build itself**, on the layer its deepest
+slot belongs to. The build above fills `engine` and `brakes`, so its slot is `brakes`
+(level 4) and its parent is the node carrying the same engine with no brakes yet.
 
-```
-(slots carried over unchanged) − (slots that contradict the parent)
-```
+Pass `parentIds` explicitly to override — two ids forces a merge.
 
-Best score wins; the deeper node breaks a tie. The example above lands under `n-turbo` —
-it keeps the engine and exhaust and only changes the brakes. Pass `parentIds` explicitly
-to override, including two ids to force a merge.
-
-Returns **201** with the created node, `attributes` already derived.
+Returns **201** with the created node, plus `slot`, `level`, and derived `attributes`.
 
 ---
 
-## POST `/nodes/n-turbo/posts`
+## POST `/nodes/n-turbo-3in/posts`
 
 ```json
 {
@@ -240,15 +270,17 @@ own `canvasX/Y/W/H` to override.
 
 ---
 
-## GET `/cars/{carId}/attributes`
+## GET `/attributes` — getAttributes
 
-Four groups, one per slot. Filter a node by testing `node.attributes.includes(optionId)`.
+Four groups in layer order. Filter a node by testing
+`node.attributes.includes(optionId)`.
 
 ```json
 [
   {
     "id": "engine",
     "label": "Engine",
+    "level": 1,
     "options": [
       { "id": "engine-stock", "label": "Stock" },
       { "id": "engine-boltons", "label": "Bolt-ons" },
@@ -256,6 +288,29 @@ Four groups, one per slot. Filter a node by testing `node.attributes.includes(op
       { "id": "engine-supercharger", "label": "Supercharged" },
       { "id": "engine-swap", "label": "Engine swap" },
       { "id": "engine-other", "label": "Other" }
+    ]
+  }
+]
+```
+
+`level` matches the graph layer that slot occupies, so the panel can be ordered to mirror
+the tree.
+
+## GET `/cars/toyota-corolla/attributes` — getAttributes for one car
+
+Same shape, but **only tags some node actually carries**, each with a count. Filtering on
+an unused tag would empty the graph, so those are dropped.
+
+```json
+[
+  {
+    "id": "engine",
+    "label": "Engine",
+    "level": 1,
+    "options": [
+      { "id": "engine-boltons", "label": "Bolt-ons",   "count": 2 },
+      { "id": "engine-turbo",   "label": "Turbo",      "count": 12 },
+      { "id": "engine-swap",    "label": "Engine swap", "count": 8 }
     ]
   }
 ]
@@ -288,7 +343,7 @@ Four groups, one per slot. Filter a node by testing `node.attributes.includes(op
     { "slot": "brakes",  "status": "modified", "before": "Slotted front rotors, performance pads", "after": "4-pot front, rally pads, hydraulic handbrake" }
   ],
   "changedCount": 4,
-  "commonAncestorId": "n-turbo",
+  "commonAncestorId": "n-root",
   "explanation": null
 }
 ```
@@ -315,11 +370,12 @@ Everything needed to write a build guide, in one call.
   },
   "attributes": ["brakes-bbk", "engine-swap", "engine-turbo", "wheels-allterrain"],
   "lineage": [
-    { "id": "n-root",    "title": "Stock Corolla" },
-    { "id": "n-boltons", "title": "Bolt-Ons" },
-    { "id": "n-turbo",   "title": "Turbo Build" },
-    { "id": "n-built",   "title": "Big Turbo, Built Block" },
-    { "id": "n-rally",   "title": "Turbo Rally Build" }
+    { "id": "n-root", "title": "Stock Corolla" },
+    { "id": "n-built", "title": "Built Block" },
+    { "id": "n-built-straight", "title": "Built · Straight Through" },
+    { "id": "n-built-track", "title": "Built · Track Wheels" },
+    { "id": "n-track-weapon", "title": "Track Weapon" },
+    { "id": "n-rally", "title": "Turbo Rally Build" }
   ],
   "communityText": [
     "Dropped from 18 to 14psi for gravel. Losing about 40hp, but heat soak on a long stage was killing it and I would rather finish."

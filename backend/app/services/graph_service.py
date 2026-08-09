@@ -82,6 +82,11 @@ def _nodes_for(car_id: str) -> list[Node]:
     return [Node(**n) for n in raw]
 
 
+def raw_nodes(car_id: str) -> list[dict]:
+    """Stored node dicts, for callers that only need to count over them."""
+    return store.find("nodes", carId=car_id)
+
+
 def list_cars() -> list[Car]:
     return [Car(**c) for c in store.all_of("cars")]
 
@@ -140,6 +145,8 @@ def create_node(car_id: str, req: CreateNodeRequest) -> Node | None:
         createdBy=req.createdBy,
         createdAt=_now(),
         isRoot=not parent_ids,
+        slot=placement.slot_for(req.mods),
+        level=placement.level_for(req.mods),
         stats=NodeStats(
             forks=0,
             notes=0,

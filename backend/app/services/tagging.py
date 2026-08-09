@@ -94,13 +94,37 @@ TAG_LABELS = {
 }
 
 
-def attribute_groups() -> list[dict]:
-    """The filter panel's groups — exactly the four slots, nothing else."""
+def attribute_groups(nodes: list[dict] | None = None) -> list[dict]:
+    """The filter panel's groups — exactly the four slots, in layer order.
+
+    Pass the car's nodes to get counts and to drop tags nothing uses, so the panel never
+    offers a filter that returns an empty graph. Omit them for the full vocabulary.
+    """
+    counts: dict[str, int] = {}
+    if nodes is not None:
+        for node in nodes:
+            for tag in node.get("attributes", []):
+                counts[tag] = counts.get(tag, 0) + 1
+
     groups = []
-    for slot in MOD_SLOTS:
-        options = [
-            {"id": tag, "label": TAG_LABELS.get(tag, tag)}
-            for tag in list(TAG_KEYWORDS[slot]) + [f"{slot}-other"]
-        ]
-        groups.append({"id": slot, "label": SLOT_LABELS[slot], "options": options})
+    for level, slot in enumerate(MOD_SLOTS, start=1):
+        options = []
+        for tag in list(TAG_KEYWORDS[slot]) + [f"{slot}-other"]:
+            count = counts.get(tag, 0)
+            if nodes is not None and count == 0:
+                continue
+            option = {"id": tag, "label": TAG_LABELS.get(tag, tag)}
+            if nodes is not None:
+                option["count"] = count
+            options.append(option)
+
+        groups.append(
+            {
+                "id": slot,
+                "label": SLOT_LABELS[slot],
+                # The layer this slot occupies in the graph.
+                "level": level,
+                "options": options,
+            }
+        )
     return groups

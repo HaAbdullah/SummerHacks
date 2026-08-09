@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.models.schemas import CommunityPost, Mods, Node, NodeStats, Reply  # noqa: E402
 from app.repositories import store  # noqa: E402
-from app.services import community_service, tagging  # noqa: E402
+from app.services import community_service, placement, tagging  # noqa: E402
 
 CAR_ID = "toyota-corolla"
 NOW = datetime.now(timezone.utc)
@@ -52,58 +52,94 @@ def node(
         createdBy=author,
         createdAt=ago(hours),
         isRoot=not parents,
+        slot=placement.slot_for(mod_obj),
+        level=placement.level_for(mod_obj),
         stats=NodeStats(forks=0, notes=0, contributors=1, heat=heat),
     ).model_dump()
 
+
+# The graph is layered — each step down introduces exactly one slot, in order:
+#   level 1 engine → level 2 exhaust → level 3 wheels → level 4 brakes
+# A child repeats its parent's mods verbatim and adds one. That repetition is the
+# invariant _validate checks, not redundancy.
+TURBO = "2ZR-FE, Garrett GT2860 turbo, 8psi, front-mount intercooler"
+BUILT = "Built bottom end, forged rods and pistons, GT3071R at 18psi"
+NA = "Cold air intake, 4-2-1 header, ECU tune"
 
 NODES = [
     node("n-root", "Stock Corolla", [], "Factory baseline. The trunk everything grows from.",
          "modbranch", 720, heat=1.0),
 
-    # --- engine-led branch ---
-    node("n-boltons", "Bolt-Ons", ["n-root"],
+    # ---------- level 1: ENGINE ----------
+    node("n-na", "Naturally Aspirated", ["n-root"],
          "Intake, header and a conservative tune. The cheapest real power.",
-         "ahmed", 600, heat=0.72,
-         engine="Cold air intake, 4-2-1 header, ECU tune",
-         exhaust="High-flow cat, resonated catback"),
-    node("n-turbo", "Turbo Build", ["n-boltons"],
+         "ahmed", 640, heat=0.72, engine=NA),
+    node("n-turbo", "Turbo", ["n-root"],
          "GT2860 at 8psi on the stock bottom end. Daily-able.",
-         "ahmed", 480, heat=0.9,
-         engine="2ZR-FE, Garrett GT2860 turbo, 8psi, front-mount intercooler",
-         exhaust="3in downpipe, catless, 3in catback",
-         brakes="Slotted front rotors, performance pads"),
-    node("n-built", "Big Turbo, Built Block", ["n-turbo"],
+         "ahmed", 620, heat=0.9, engine=TURBO),
+    node("n-built", "Built Block", ["n-root"],
          "Forged internals, GT3071R at 18psi. Track weapon.",
-         "ahmed", 300, heat=0.85,
-         engine="Built bottom end, forged rods and pistons, GT3071R at 18psi",
-         exhaust="3.5in turbo-back, straight through",
+         "ahmed", 600, heat=0.85, engine=BUILT),
+
+    # ---------- level 2: EXHAUST ----------
+    node("n-na-quiet", "NA · Resonated", ["n-na"],
+         "Fully resonated. Power without the drone on a long commute.",
+         "abdullah", 560, heat=0.5,
+         engine=NA, exhaust="Fully resonated catback, stock tips"),
+    node("n-turbo-3in", "Turbo · 3in Catback", ["n-turbo"],
+         "3in downpipe and catback. Loud under load, civil at cruise.",
+         "ahmed", 540, heat=0.78,
+         engine=TURBO, exhaust="3in downpipe, catless, 3in catback"),
+    node("n-built-straight", "Built · Straight Through", ["n-built"],
+         "3.5in turbo-back, no silencing. Track use only.",
+         "ahmed", 520, heat=0.8,
+         engine=BUILT, exhaust="3.5in turbo-back, straight through"),
+    node("n-built-clearance", "Built · High Clearance", ["n-built"],
+         "3.5in routed high for stage use. Survives ruts.",
+         "shoaib", 500, heat=0.7,
+         engine=BUILT, exhaust="3.5in high-clearance turbo-back"),
+
+    # ---------- level 3: WHEELS ----------
+    node("n-turbo-street", "Turbo · Street Wheels", ["n-turbo-3in"],
+         "17in cast on a road tyre. Daily proportions.",
+         "abdullah", 460, heat=0.55,
+         engine=TURBO, exhaust="3in downpipe, catless, 3in catback",
+         wheels="17in cast, 215/45"),
+    node("n-built-track", "Built · Track Wheels", ["n-built-straight"],
+         "17in forged on semi-slicks. Unsprung weight matters more than looks.",
+         "ahmed", 440, heat=0.82,
+         engine=BUILT, exhaust="3.5in turbo-back, straight through",
+         wheels="17in lightweight forged, 235/40 semi-slick"),
+    node("n-built-gravel", "Built · Gravel Wheels", ["n-built-clearance"],
+         "16in steel on all-terrain. Sidewall is the whole point.",
+         "kshitij", 420, heat=0.75,
+         engine=BUILT, exhaust="3.5in high-clearance turbo-back",
+         wheels="16in gravel-spec, 215/65 all-terrain"),
+
+    # ---------- level 4: BRAKES ----------
+    node("n-turbo-daily", "Turbo Daily", ["n-turbo-street"],
+         "OEM+ pads and stainless lines. Finished street car.",
+         "abdullah", 380, heat=0.6,
+         engine=TURBO, exhaust="3in downpipe, catless, 3in catback",
+         wheels="17in cast, 215/45", brakes="OEM+ pads, stainless lines"),
+    node("n-track-weapon", "Track Weapon", ["n-built-track"],
+         "4-pot front on 320mm rotors. Survives a full session.",
+         "ahmed", 300, heat=0.88,
+         engine=BUILT, exhaust="3.5in turbo-back, straight through",
          wheels="17in lightweight forged, 235/40 semi-slick",
          brakes="4-pot front calipers, 320mm rotors"),
-
-    # --- wheels/brakes-led branch ---
-    node("n-trail", "Trail Spec", ["n-root"],
-         "All-terrain rubber and heavy-duty pads. Gravel-ready on a budget.",
-         "kshitij", 560, heat=0.68,
-         wheels="16in steel, 215/65 all-terrain",
-         brakes="Heavy-duty pads, stainless lines"),
-    node("n-gravel", "Gravel Brakes", ["n-trail"],
+    node("n-gravel-rally", "Gravel Rally", ["n-built-gravel"],
          "Rally pads and a hydraulic handbrake. Stops on loose surface.",
-         "shoaib", 400, heat=0.6,
-         wheels="16in steel, 215/65 all-terrain, +30mm spacers",
-         brakes="Vented front discs, rally pads, hydraulic handbrake",
-         exhaust="High-clearance mid-pipe"),
+         "shoaib", 260, heat=0.8,
+         engine=BUILT, exhaust="3.5in high-clearance turbo-back",
+         wheels="16in gravel-spec, 215/65 all-terrain",
+         brakes="Vented front discs, rally pads, hydraulic handbrake"),
 
-    # --- quiet daily ---
-    node("n-quiet", "Quiet Daily", ["n-root"],
-         "Resonated everything. Power without the drone.",
-         "abdullah", 520, heat=0.5,
-         exhaust="Fully resonated catback, stock tips",
-         wheels="17in cast, 215/45",
-         brakes="OEM+ pads, stainless lines"),
-
-    # --- THE MERGE: two parents ---
-    node("n-rally", "Turbo Rally Build", ["n-built", "n-gravel"],
-         "Fusion: built turbo motor on gravel suspension geometry. Detuned for reliability.",
+    # ---------- THE MERGE ----------
+    # Fusion of two level-4 branches. A merge is the one case that cannot sit on a
+    # single layer — it draws from both, which is exactly what makes it interesting.
+    node("n-rally", "Turbo Rally Build", ["n-track-weapon", "n-gravel-rally"],
+         "Fusion: track brakes on gravel wheels, detuned to 14psi for reliability.",
          "kshitij", 96, heat=0.95,
          engine="Built bottom end, forged rods and pistons, GT3071R at 14psi for reliability",
          exhaust="3.5in high-clearance turbo-back",
@@ -130,49 +166,49 @@ def post(
 
 POSTS = [
     # The Corolla revving voice note.
-    post("post-rev-1", "n-turbo", "ahmed", "voice",
+    post("post-rev-1", "n-turbo-3in", "ahmed", "voice",
          "Corolla revving — 8psi spool",
          "Transcript: cold start, then three pulls to redline. You can hear the turbo "
          "spool come in around 3200rpm and the blow-off between shifts. No rattle on "
          "overrun, so the wastegate is holding.",
          hours=470, duration=27),
-    post("post-rev-2", "n-built", "ahmed", "voice",
+    post("post-rev-2", "n-built-straight", "ahmed", "voice",
          "Corolla revving — big turbo, 18psi",
          "Transcript: much later spool than the GT2860, nothing until about 4000rpm, "
          "then it comes in hard. Straight-through exhaust is loud enough that the "
          "intake noise disappears above 5000.",
          hours=290, duration=34),
 
-    post("post-turbo-1", "n-turbo", "shoaib", "text",
+    post("post-turbo-1", "n-turbo-3in", "shoaib", "text",
          "Boost ceiling on a stock block",
          "8psi has held up for 20k miles on mine. Everyone I know who pushed past 10 on "
          "a stock bottom end lost ringlands within a season. Not worth it — build the "
          "block first.",
          hours=460),
-    post("post-turbo-2", "n-turbo", "ahmed", "image",
+    post("post-turbo-2", "n-turbo-3in", "ahmed", "image",
          "Intercooler piping routing",
          "Piping runs behind the bumper support rather than through it — no cutting, and "
          "it comes out again in twenty minutes if you need to go back to stock.",
          hours=450, media=True),
-    post("post-turbo-3", "n-turbo", "kshitij", "sketch",
+    post("post-turbo-3", "n-turbo-3in", "kshitij", "sketch",
          "Downpipe clearance sketch",
          "Sketch showing where the 3in downpipe fouls the steering rack. Needs a dimple "
          "or you will feel it through the wheel at idle.",
          hours=440, media=True),
 
-    post("post-trail-1", "n-trail", "kshitij", "text",
+    post("post-trail-1", "n-built-gravel", "kshitij", "text",
          "Cheapest way to real sidewall",
          "215/65 on a 16in steel wheel is the cheapest way to get sidewall on this "
          "chassis. Whole setup was under $600 used, and the steels bend instead of "
          "cracking when you hit something.",
          hours=550),
-    post("post-trail-2", "n-trail", "shoaib", "image",
+    post("post-trail-2", "n-built-gravel", "shoaib", "image",
          "Spacer fitment at full lock",
          "+30mm spacers, no rubbing at full lock after rolling the front lip. Photo is "
          "at full steering deflection.",
          hours=540, media=True),
 
-    post("post-gravel-1", "n-gravel", "shoaib", "voice",
+    post("post-gravel-1", "n-gravel-rally", "shoaib", "voice",
          "Handbrake feel after the swap",
          "Transcript: walking through the hydraulic handbrake install and how much lever "
          "travel there is before it bites. Much shorter throw than the cable setup.",
@@ -185,7 +221,7 @@ POSTS = [
          "long stage was killing it and I would rather finish. Same turbo, just a "
          "different boost target in the tune.",
          hours=6),
-    post("post-quiet-2", "n-quiet", "abdullah", "image",
+    post("post-quiet-2", "n-na-quiet", "abdullah", "image",
          "Tip alignment after the swap",
          "Tips sit 8mm proud of the bumper cut now. Looks intentional rather than "
          "like something fell off.",
@@ -195,13 +231,13 @@ POSTS = [
          "",
          hours=3, media=True, duration=52, transcribed=False),
 
-    post("post-quiet-1", "n-quiet", "abdullah", "text",
+    post("post-quiet-1", "n-na-quiet", "abdullah", "text",
          "Resonator placement matters",
          "First catback I ran droned badly at 70mph. Moving the resonator 200mm further "
          "back killed it completely. Same pipe diameter, same muffler.",
          hours=500),
 
-    post("post-boltons-1", "n-boltons", "ahmed", "blueprint",
+    post("post-boltons-1", "n-na", "ahmed", "blueprint",
          "Header routing diagram",
          "Blueprint of the 4-2-1 header primaries and where they clear the steering "
          "shaft. Useful if you are fabricating rather than buying.",
@@ -278,9 +314,35 @@ def _validate(nodes: dict, posts: dict, replies: dict) -> None:
     for r in replies.values():
         assert r["postId"] in posts, f"reply {r['id']} on unknown post"
 
+    # The layer invariant: a single-parent node adds exactly one slot to its parent and
+    # repeats the rest verbatim. Merges are exempt — they draw from two branches.
+    for n in nodes.values():
+        if len(n["parentIds"]) != 1:
+            continue
+        parent = nodes[n["parentIds"][0]]
+        mine = {s: v for s, v in n["mods"].items() if v.strip()}
+        theirs = {s: v for s, v in parent["mods"].items() if v.strip()}
+        added = set(mine) - set(theirs)
+        assert len(added) == 1, (
+            f"{n['id']} adds {sorted(added) or 'nothing'} to {parent['id']} — "
+            "each level must introduce exactly one slot"
+        )
+        carried = {s: v for s, v in mine.items() if s in theirs}
+        assert carried == theirs, (
+            f"{n['id']} changed an inherited slot from {parent['id']}; a level may only "
+            "add, not rewrite what it inherits"
+        )
+        assert n["slot"] == added.pop(), f"{n['id']} slot field disagrees with its mods"
+        assert n["level"] == parent["level"] + 1 or n["level"] > parent["level"], (
+            f"{n['id']} level {n['level']} must be deeper than parent {parent['level']}"
+        )
+
     assert any(len(n["parentIds"]) > 1 for n in nodes.values()), "need at least one merge"
     assert any(p["kind"] == "voice" for p in posts.values()), "need a voice note"
     assert any("rev" in p["title"].lower() for p in posts.values()), "need the revving clip"
+
+    levels = {n["level"] for n in nodes.values()}
+    assert levels == {0, 1, 2, 3, 4}, f"want every layer represented, got {sorted(levels)}"
 
 
 if __name__ == "__main__":
