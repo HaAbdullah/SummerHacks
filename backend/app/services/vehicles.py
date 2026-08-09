@@ -260,6 +260,19 @@ def _score(models: list[str], needle: str) -> list[tuple[tuple, str]]:
 
 # --- public API ------------------------------------------------------------------
 
+def _build_counts() -> dict[str, int]:
+    """How many builds each generation has. Empty dict if storage is unavailable."""
+    try:
+        from app.repositories import store
+
+        counts: dict[str, int] = {}
+        for node in store.all_of("nodes"):
+            counts[node["carId"]] = counts.get(node["carId"], 0) + 1
+        return counts
+    except Exception:  # noqa: BLE001 - search must not fail because storage hiccuped
+        return {}
+
+
 def _results_for(make: str, model: str, year: int | None) -> list[dict]:
     """One result per generation — the unit a build graph hangs off.
 
@@ -267,6 +280,11 @@ def _results_for(make: str, model: str, year: int | None) -> list[dict]:
     resolves straight to E170 rather than making the user pick. With no year, every
     generation is offered, because a 2015 and a 2022 Corolla take different parts and
     guessing would send someone to the wrong build.
+
+    Generations that already have builds rank first. Someone searching "civic" almost
+    always wants the generation the community is actually working on, not simply the
+    newest one — and it means a search result is never a dead end when a populated
+    sibling exists.
     """
     gens = generations.for_model(make, model)
 
@@ -276,7 +294,16 @@ def _results_for(make: str, model: str, year: int | None) -> list[dict]:
         # silence — fall back to the model's full list.
         gens = [match] if match else gens
 
-    return [{**gen, "matchedYear": year} for gen in gens]
+    counts = _build_counts()
+    results = [
+        {**gen, "matchedYear": year, "buildCount": counts.get(gen["id"], 0)}
+        for gen in gens
+    ]
+
+    # An explicit year is the user being specific — never reorder that.
+    if year is None:
+        results.sort(key=lambda r: -r["buildCount"])
+    return results
 
 
 async def search(query: str, limit: int = 8) -> list[dict]:
