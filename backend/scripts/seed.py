@@ -23,7 +23,47 @@ from app.services import community_service, placement, tagging  # noqa: E402
 # The graph is keyed by GENERATION, not model — mods are generation-specific. This id
 # is what vehicle search returns for a 2014-2019 Corolla.
 CAR_ID = "toyota-corolla-e170"
+CIVIC_ID = "honda-civic-si-all-years"
 NOW = datetime.now(timezone.utc)
+
+# Real car photography (Unsplash CDN) — Corolla-family sedans / hatchbacks + Civic.
+# Avoid picsum placeholders so the graph and community feed look like real cars.
+def _u(photo_id: str, w: int = 1000, h: int = 560) -> str:
+    return f"https://images.unsplash.com/{photo_id}?w={w}&h={h}&fit=crop&q=80&auto=format"
+
+
+COROLLA_CAR_HERO = _u("photo-1621007947382-bb3c3994e3fb")
+CIVIC_CAR_HERO = _u("photo-1606664515524-ed2f786a0bd6")
+
+# Per-node heroes — varied real car shots (sedans, hatches, night, track vibes).
+NODE_HEROES: dict[str, str] = {
+    "n-root": _u("photo-1621007947382-bb3c3994e3fb"),
+    "n-na": _u("photo-1549317661-bd32c8ce0db2"),
+    "n-turbo": _u("photo-1552519507-da3b142c6e3d"),
+    "n-built": _u("photo-1492144534655-ae79c964c9d7"),
+    "n-na-quiet": _u("photo-1541899481282-d53bffe3c35d"),
+    "n-turbo-3in": _u("photo-1618843479313-40f8afb4b4d8"),
+    "n-built-straight": _u("photo-1503376780353-7e6692767b70"),
+    "n-built-clearance": _u("photo-1583121274602-3e2820c69888"),
+    "n-turbo-street": _u("photo-1617814076367-b759c7d7e738"),
+    "n-built-track": _u("photo-1614162692292-7ac56d7f7f1e"),
+    "n-built-gravel": _u("photo-1609521263047-f8f205293f24"),
+    "n-turbo-daily": _u("photo-1617531653332-bd46c24f2068"),
+    "n-track-weapon": _u("photo-1553440569-bcc63803a83d"),
+    "n-gravel-rally": _u("photo-1492144534655-ae79c964c9d7"),
+    "n-rally": _u("photo-1552519507-da3b142c6e3d"),
+    f"{CIVIC_ID}-root": CIVIC_CAR_HERO,
+}
+
+# Community contribution media (image / sketch / video / blueprint cards).
+POST_MEDIA: dict[str, str] = {
+    "post-turbo-2": _u("photo-1618843479313-40f8afb4b4d8", 800, 500),
+    "post-turbo-3": _u("photo-1621007947382-bb3c3994e3fb", 800, 500),
+    "post-trail-2": _u("photo-1609521263047-f8f205293f24", 800, 500),
+    "post-quiet-2": _u("photo-1541899481282-d53bffe3c35d", 800, 500),
+    "post-rally-2": _u("photo-1552519507-da3b142c6e3d", 800, 500),
+    "post-boltons-1": _u("photo-1614162692292-7ac56d7f7f1e", 800, 500),
+}
 
 
 def ago(hours: float) -> str:
@@ -50,7 +90,7 @@ def node(
         attributes=tagging.tags_for(mod_obj),
         mods=mod_obj,
         summary=summary,
-        heroImage=f"https://picsum.photos/seed/{node_id}-hero/1000/560",
+        heroImage=NODE_HEROES.get(node_id) or _u("photo-1621007947382-bb3c3994e3fb"),
         createdBy=author,
         createdAt=ago(hours),
         isRoot=not parents,
@@ -156,11 +196,14 @@ def post(
     transcribed: bool = True,
 ) -> dict:
     x, y, w, h = community_service._canvas_defaults(kind, post_id)
+    media_url = None
+    if media:
+        media_url = POST_MEDIA.get(post_id) or NODE_HEROES.get(node_id) or COROLLA_CAR_HERO
     return CommunityPost(
         id=post_id, nodeId=node_id, author=author,
         avatarColor=community_service._avatar_color(author),
         kind=kind, title=title, body=body,
-        mediaUrl=f"https://picsum.photos/seed/{post_id}/800/500" if media else None,
+        mediaUrl=media_url,
         durationSec=duration, transcribed=transcribed, createdAt=ago(hours),
         canvasX=x, canvasY=y, canvasW=w, canvasH=h,
     ).model_dump()
@@ -274,19 +317,44 @@ def main() -> None:
     car = {
         "id": CAR_ID, "make": "Toyota", "model": "Corolla",
         "generation": "E170", "yearStart": 2014, "yearEnd": 2019,
-        "yearRange": "2014–2019", "heroImage": None, "rootNodeId": "n-root",
+        "yearRange": "2014–2019", "heroImage": COROLLA_CAR_HERO, "rootNodeId": "n-root",
     }
+    civic = {
+        "id": CIVIC_ID, "make": "Honda", "model": "Civic Si",
+        "generation": "All years", "yearStart": 1981, "yearEnd": None,
+        "yearRange": "1981–present", "heroImage": CIVIC_CAR_HERO,
+        "rootNodeId": f"{CIVIC_ID}-root",
+    }
+    civic_root = Node(
+        id=f"{CIVIC_ID}-root",
+        carId=CIVIC_ID,
+        title="Stock Civic Si",
+        parentIds=[],
+        attributes=tagging.tags_for(Mods()),
+        mods=Mods(),
+        summary="Factory Civic Si baseline.",
+        heroImage=CIVIC_CAR_HERO,
+        createdBy="modbranch",
+        createdAt=ago(800),
+        isRoot=True,
+        slot=None,
+        level=0,
+        stats=NodeStats(forks=0, notes=0, contributors=1, heat=1.0),
+    ).model_dump()
 
     nodes = {n["id"]: n for n in NODES}
+    nodes[civic_root["id"]] = civic_root
     posts = {p["id"]: p for p in POSTS}
     replies = {r["id"]: r for r in REPLIES}
 
     # Derive counts rather than hand-writing them, so stats always agree with the data.
     for p in posts.values():
-        nodes[p["nodeId"]]["stats"]["notes"] += 1
+        if p["nodeId"] in nodes:
+            nodes[p["nodeId"]]["stats"]["notes"] += 1
     for n in nodes.values():
         for parent_id in n["parentIds"]:
-            nodes[parent_id]["stats"]["forks"] += 1
+            if parent_id in nodes:
+                nodes[parent_id]["stats"]["forks"] += 1
         contributors = {n["createdBy"]} | {
             p["author"] for p in posts.values() if p["nodeId"] == n["id"]
         }
@@ -294,12 +362,18 @@ def main() -> None:
 
     _validate(nodes, posts, replies)
 
-    store.reset({"cars": {CAR_ID: car}, "nodes": nodes, "posts": posts, "replies": replies})
+    store.reset({
+        "cars": {CAR_ID: car, CIVIC_ID: civic},
+        "nodes": nodes,
+        "posts": posts,
+        "replies": replies,
+    })
 
     merges = [n["id"] for n in nodes.values() if len(n["parentIds"]) > 1]
     voice = [p["id"] for p in posts.values() if p["kind"] == "voice"]
     print(f"Seeded {store.DB_PATH}")
     print(f"  {len(nodes)} nodes, {len(posts)} posts, {len(replies)} replies")
+    print(f"  cars: {CAR_ID}, {CIVIC_ID} (with hero images)")
     print(f"  merge nodes: {merges}")
     print(f"  voice notes: {voice}")
 

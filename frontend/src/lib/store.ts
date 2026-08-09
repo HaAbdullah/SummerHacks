@@ -13,6 +13,13 @@ interface AppState {
   addBranchRequest: { parentId: string; presetAttributes?: string[] } | null;
   flashNodeId: string | null;
   graphZoom: number;
+  /** First-layer branch (child of root) the user has drilled into from the
+   * "Select Modification" dropdown. Its children are revealed on the graph;
+   * everything else stays collapsed to root + first layer. */
+  focusedBranchId: string | null;
+  /** "Show All Modifications" canvas toggle — bypasses the default collapsed
+   * view and renders the entire tree regardless of focusedBranchId. */
+  showFullTree: boolean;
 
   setFilters: (filters: Record<string, string[]>) => void;
   toggleFilter: (groupId: string, optionId: string) => void;
@@ -27,6 +34,8 @@ interface AppState {
   closeAddBranchModal: () => void;
   setFlashNodeId: (id: string | null) => void;
   setGraphZoom: (z: number) => void;
+  setFocusedBranchId: (id: string | null) => void;
+  setShowFullTree: (on: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -39,6 +48,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   addBranchRequest: null,
   flashNodeId: null,
   graphZoom: 0.75,
+  focusedBranchId: null,
+  showFullTree: false,
 
   setFilters: (filters) => set({ activeFilters: filters }),
 
@@ -92,4 +103,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   setFlashNodeId: (id) => set({ flashNodeId: id }),
 
   setGraphZoom: (z) => set({ graphZoom: z }),
+
+  setFocusedBranchId: (id) =>
+    set((s) => ({ focusedBranchId: s.focusedBranchId === id ? null : id })),
+
+  setShowFullTree: (on) => set({ showFullTree: on }),
 }));

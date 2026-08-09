@@ -114,6 +114,22 @@ body {
   font-weight: 600;
 }
 
+/* Ecosystem analytics — network radar pulse dots */
+.network-dot {
+  animation: network-pulse 3s infinite ease-in-out;
+}
+@keyframes network-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
 /* ——— BuildaMod effects (glass nav, gradients, glow, noise) ——— */
 .glass-nav {
   background: rgb(18 18 18 / 0.8);
@@ -149,6 +165,29 @@ body {
 
 .hero-gradient {
   background: radial-gradient(circle at 50% -20%, rgb(255 60 60 / 0.15) 0%, rgb(5 5 5 / 0) 60%);
+}
+
+/* ——— Hero showcase (landing page centerpiece) ——— */
+.hero-showcase {
+  position: relative;
+  transition:
+    transform 450ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 450ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hero-showcase:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 80px -20px rgb(255 60 60 / 0.25);
+}
+
+.hero-showcase-badge {
+  background: rgb(18 18 18 / 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  transition: background 300ms ease, border-color 300ms ease;
+}
+.hero-showcase-badge:hover {
+  background: rgb(18 18 18 / 0.8);
+  border-color: rgb(255 255 255 / 0.24);
 }
 
 @keyframes float {

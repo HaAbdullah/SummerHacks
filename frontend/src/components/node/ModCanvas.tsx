@@ -13,7 +13,8 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Mic, Upload, PenLine, ZoomIn, ZoomOut } from "lucide-react";
-import { addNote, updateNotePosition } from "@/lib/api";
+import { addNote, updateNotePosition, uploadNote } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/media-url";
 import type { Note } from "@/lib/types";
 
 const YOU = "#5e6ad2";
@@ -129,12 +130,13 @@ function GalleryCard({
   nodeId: string;
 }) {
   const router = useRouter();
+  const mediaSrc = resolveMediaUrl(note.mediaUrl);
   const hasMedia =
     (note.kind === "image" ||
       note.kind === "sketch" ||
       note.kind === "video" ||
       note.kind === "blueprint") &&
-    !!note.mediaUrl;
+    !!mediaSrc;
 
   return (
     <div className="canvas-card flex h-fit flex-col rounded-2xl p-4">
@@ -154,9 +156,9 @@ function GalleryCard({
         <div className="mb-4 aspect-video overflow-hidden rounded-xl bg-black/40">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={note.mediaUrl}
+            src={mediaSrc}
             alt={note.body ?? note.kind}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain bg-white"
             draggable={false}
           />
         </div>
@@ -332,14 +334,10 @@ function BoardInner({
     if (audios.length > 0) {
       const next = [...notes];
       for (const file of audios) {
-        const url = URL.createObjectURL(file);
-        const created = await addNote(nodeId, {
-          nodeId,
-          author: "You",
-          avatarColor: YOU,
+        const created = await uploadNote(nodeId, file, {
           kind: "voice",
+          author: "You",
           body: file.name,
-          mediaUrl: url,
         });
         next.unshift(created);
       }
@@ -349,14 +347,11 @@ function BoardInner({
 
   const submitImageComposer = async () => {
     const file = imageQueue[0];
-    if (!file || !imagePreviewUrl) return;
-    const created = await addNote(nodeId, {
-      nodeId,
-      author: "You",
-      avatarColor: YOU,
+    if (!file) return;
+    const created = await uploadNote(nodeId, file, {
       kind: "image",
+      author: "You",
       body: imageCaption.trim() || file.name,
-      mediaUrl: imagePreviewUrl,
     });
     onNotesChange([created, ...notes]);
     setImageQueue((q) => q.slice(1));
@@ -389,13 +384,15 @@ function BoardInner({
   const attachSketch = async () => {
     const c = canvasRef.current;
     if (!c) return;
-    const created = await addNote(nodeId, {
-      nodeId,
-      author: "You",
-      avatarColor: YOU,
+    const blob = await new Promise<Blob | null>((resolve) =>
+      c.toBlob(resolve, "image/png"),
+    );
+    if (!blob) return;
+    const created = await uploadNote(nodeId, blob, {
       kind: "sketch",
+      author: "You",
       body: "Sketch",
-      mediaUrl: c.toDataURL("image/png"),
+      filename: "sketch.png",
     });
     onNotesChange([created, ...notes]);
     setSketchOn(false);
@@ -427,15 +424,12 @@ function BoardInner({
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
         const blob = new Blob(chunks, { type: "audio/webm" });
-        const url = URL.createObjectURL(blob);
-        const created = await addNote(nodeId, {
-          nodeId,
-          author: "You",
-          avatarColor: YOU,
+        const created = await uploadNote(nodeId, blob, {
           kind: "voice",
+          author: "You",
           body: "Voice note",
-          mediaUrl: url,
           durationSec: 5,
+          filename: "voice-note.webm",
         });
         onNotesChange([created, ...notes]);
       };
@@ -672,24 +666,41 @@ function BoardInner({
               ref={canvasRef}
               width={440}
               height={280}
-              className="rounded-[var(--radius-sm)] border border-line"
+              className="rounded-[var(--radius-sm)] border border-line bg-white touch-none"
               onMouseDown={(e) => {
                 drawing.current = true;
                 const c = canvasRef.current!;
                 const ctx = c.getContext("2d")!;
                 const r = c.getBoundingClientRect();
+                const sx = c.width / r.width;
+                const sy = c.height / r.height;
+                ctx.strokeStyle = "#171717";
+                ctx.lineWidth = 2;
+                ctx.lineCap = "round";
+                ctx.lineJoin = "round";
                 ctx.beginPath();
-                ctx.moveTo(e.clientX - r.left, e.clientY - r.top);
+                ctx.moveTo(
+                  (e.clientX - r.left) * sx,
+                  (e.clientY - r.top) * sy,
+                );
               }}
               onMouseMove={(e) => {
                 if (!drawing.current || !canvasRef.current) return;
                 const c = canvasRef.current;
                 const ctx = c.getContext("2d")!;
                 const r = c.getBoundingClientRect();
-                ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
+                const sx = c.width / r.width;
+                const sy = c.height / r.height;
+                ctx.lineTo(
+                  (e.clientX - r.left) * sx,
+                  (e.clientY - r.top) * sy,
+                );
                 ctx.stroke();
               }}
               onMouseUp={() => {
+                drawing.current = false;
+              }}
+              onMouseLeave={() => {
                 drawing.current = false;
               }}
             />

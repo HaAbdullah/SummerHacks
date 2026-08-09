@@ -19,7 +19,10 @@ export interface FeaturedCar {
 
 export function CarCard({ car }: { car: FeaturedCar }) {
   const router = useRouter();
-  const go = () => router.push(`/garage/${car.id}`);
+  const go = () =>
+    router.push(
+      `/garage/${car.id}?${new URLSearchParams({ make: car.make, model: car.model }).toString()}`,
+    );
 
   return (
     <div

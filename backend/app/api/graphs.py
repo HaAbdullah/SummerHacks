@@ -16,6 +16,7 @@ from app.models.schemas import (
     CreateNodeRequest,
     CreatePostRequest,
     CreateReplyRequest,
+    EcosystemAnalytics,
     Graph,
     Node,
     NodeDetail,
@@ -24,6 +25,7 @@ from app.models.schemas import (
 )
 from app.services import (
     ai_service,
+    analytics_service,
     community_service,
     generations,
     graph_service,
@@ -84,6 +86,18 @@ def get_stats(car_id: str) -> Stats:
     if stats is None:
         raise HTTPException(404, f"No car '{car_id}'")
     return stats
+
+
+@router.get(
+    "/ecosystem/analytics",
+    response_model=EcosystemAnalytics,
+    tags=["graph"],
+)
+def get_ecosystem_analytics(
+    range: str = Query("30d", pattern="^(7d|30d|90d)$", description="7d | 30d | 90d"),
+) -> EcosystemAnalytics:
+    """Platform-wide Ecosystem Pulse rollup — real counts from stored data."""
+    return analytics_service.get_ecosystem_analytics(range)
 
 
 @router.get("/cars/{car_id}/generations", tags=["graph"])

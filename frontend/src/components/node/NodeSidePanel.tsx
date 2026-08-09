@@ -1,19 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  askAiChat,
-  generateBuildGuide,
-  getChat,
-  sendChatMessage,
-} from "@/lib/api";
+import { askAiChat, generateBuildGuide } from "@/lib/api";
 import type { BuildGuide, BuildNodeData, ChatMessage } from "@/lib/types";
 
 export function NodeSidePanel({ node }: { node: BuildNodeData }) {
-  const [tab, setTab] = useState<"chat" | "ai">("chat");
-  const [community, setCommunity] = useState<ChatMessage[]>([]);
   const [aiThread, setAiThread] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
   const [aiInput, setAiInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [guide, setGuide] = useState<BuildGuide | null>(null);
@@ -23,34 +15,15 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const msgs = await getChat(node.id);
-      if (!cancelled) {
-        setCommunity(msgs.filter((m) => m.role !== "ai" && m.role !== "user"));
-        setAiThread(msgs.filter((m) => m.role === "ai" || m.role === "user"));
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    // Fresh AI thread when switching nodes (no community store).
+    setAiThread([]);
+    setGuide(null);
+    setAiInput("");
   }, [node.id]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [community, aiThread, tab]);
-
-  const sendCommunity = async () => {
-    if (!input.trim() || busy) return;
-    setBusy(true);
-    try {
-      const msg = await sendChatMessage(node.id, input.trim(), "community");
-      setCommunity((c) => [...c, msg]);
-      setInput("");
-    } finally {
-      setBusy(false);
-    }
-  };
+  }, [aiThread, guide]);
 
   const sendAi = async () => {
     if (!aiInput.trim() || busy) return;
@@ -67,7 +40,6 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
 
   const runBuild = async () => {
     setBuilding(true);
-    setTab("ai");
     try {
       const g = await generateBuildGuide(node.id);
       setGuide(g);
@@ -114,77 +86,38 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
         </div>
       )}
 
-      <div className="flex gap-0.5 border-b border-line px-2 py-1.5">
-        {(
-          [
-            ["chat", "Community"],
-            ["ai", "AI"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={`focus-ring flex-1 rounded-[var(--radius-sm)] py-1.5 text-[12px] font-medium transition ${
-              tab === id
-                ? "bg-surface-active text-ink"
-                : "text-muted hover:bg-surface-hover hover:text-ink"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="flex items-center border-b border-line px-3 py-2.5">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-accent">
+          AI Talk
+        </p>
       </div>
 
       <div className="scroll-soft flex-1 space-y-2.5 overflow-y-auto px-3 py-3">
-        {tab === "chat" &&
-          community.map((m) => (
-            <div key={m.id} className="flex gap-2">
-              <span
-                className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white"
-                style={{ background: m.avatarColor }}
-              >
-                {m.author.slice(0, 1).toUpperCase()}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-medium text-muted">@{m.author}</p>
-                <p className="mt-0.5 text-ui leading-relaxed text-ink-soft">
-                  {m.body}
-                </p>
-              </div>
-            </div>
-          ))}
+        {aiThread.map((m) => (
+          <div
+            key={m.id}
+            className={`rounded-[var(--radius-sm)] px-2.5 py-2 text-ui leading-relaxed ${
+              m.role === "user"
+                ? "ml-4 bg-bg text-ink"
+                : "mr-1 border border-line bg-bg text-ink-soft"
+            }`}
+          >
+            {m.role === "ai" && (
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                AI
+              </p>
+            )}
+            {m.body}
+          </div>
+        ))}
 
-        {tab === "chat" && community.length === 0 && (
-          <p className="text-ui text-muted">No messages yet.</p>
-        )}
-
-        {tab === "ai" &&
-          aiThread.map((m) => (
-            <div
-              key={m.id}
-              className={`rounded-[var(--radius-sm)] px-2.5 py-2 text-ui leading-relaxed ${
-                m.role === "user"
-                  ? "ml-4 bg-bg text-ink"
-                  : "mr-1 border border-line bg-bg text-ink-soft"
-              }`}
-            >
-              {m.role === "ai" && (
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-accent">
-                  AI
-                </p>
-              )}
-              {m.body}
-            </div>
-          ))}
-
-        {tab === "ai" && aiThread.length === 0 && !guide && (
+        {aiThread.length === 0 && !guide && (
           <p className="text-ui text-muted">
             Ask about parts, cost, or build order.
           </p>
         )}
 
-        {tab === "ai" && guide && (
+        {guide && (
           <div className="rounded-[var(--radius)] border border-line bg-bg p-3">
             <p className="text-[13px] font-semibold tracking-tight text-ink">
               {guide.title}
@@ -234,29 +167,20 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
         <div className="flex gap-1.5">
           <input
             ref={inputRef}
-            value={tab === "chat" ? input : aiInput}
-            onChange={(e) =>
-              tab === "chat"
-                ? setInput(e.target.value)
-                : setAiInput(e.target.value)
-            }
+            value={aiInput}
+            onChange={(e) => setAiInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                if (tab === "chat") void sendCommunity();
-                else void sendAi();
-              }
+              if (e.key === "Enter") void sendAi();
             }}
-            placeholder={
-              tab === "chat" ? "Message community…" : "Ask AI…"
-            }
+            placeholder="Ask AI…"
             className="input focus-ring min-w-0 flex-1"
+            disabled={busy}
           />
           <button
             type="button"
-            onClick={() =>
-              tab === "chat" ? void sendCommunity() : void sendAi()
-            }
-            className="btn btn-primary focus-ring"
+            onClick={() => void sendAi()}
+            disabled={busy || !aiInput.trim()}
+            className="btn btn-primary focus-ring disabled:opacity-50"
           >
             Send
           </button>

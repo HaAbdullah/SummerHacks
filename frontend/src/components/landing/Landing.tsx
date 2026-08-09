@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, GitBranch, Search, Sparkles } from "lucide-react";
 import { FaDiscord, FaInstagram, FaXTwitter } from "react-icons/fa6";
@@ -9,14 +10,32 @@ import type { Car } from "@/lib/types";
 import { CarCard, type FeaturedCar } from "./CarCard";
 
 const RECENT_CARS = [
-  { id: "toyota-corolla", label: "Toyota Corolla" },
-  { id: "honda-civic", label: "Honda Civic" },
-  { id: "mazda-miata", label: "Mazda Miata" },
+  {
+    id: "toyota-corolla-e170",
+    label: "Toyota Corolla",
+    make: "Toyota",
+    model: "Corolla",
+    generation: "E170",
+  },
+  {
+    id: "honda-civic-fc-fk-10th-gen",
+    label: "Honda Civic",
+    make: "Honda",
+    model: "Civic",
+    generation: "FC/FK (10th gen)",
+  },
+  {
+    id: "mazda-mx-5-nd",
+    label: "Mazda Miata",
+    make: "Mazda",
+    model: "MX-5",
+    generation: "ND",
+  },
 ];
 
 const FEATURED_CARS: FeaturedCar[] = [
   {
-    id: "toyota-corolla",
+    id: "toyota-corolla-e170",
     make: "Toyota",
     model: "Corolla",
     badgeLabel: "HOT BRANCH",
@@ -30,7 +49,7 @@ const FEATURED_CARS: FeaturedCar[] = [
     extraCount: 12,
   },
   {
-    id: "honda-civic",
+    id: "honda-civic-fc-fk-10th-gen",
     make: "Honda",
     model: "Civic",
     badgeLabel: "PRO BUILDS",
@@ -44,7 +63,7 @@ const FEATURED_CARS: FeaturedCar[] = [
     extraCount: 5,
   },
   {
-    id: "mazda-miata",
+    id: "mazda-mx-5-nd",
     make: "Mazda",
     model: "Miata",
     badgeLabel: "WILD BRANCH",
@@ -91,7 +110,11 @@ export function Landing() {
     };
   }, [query]);
 
-  const go = (carId: string) => router.push(`/garage/${carId}`);
+  const go = (car: { id: string; make: string; model: string; generation?: string }) => {
+    const params = new URLSearchParams({ make: car.make, model: car.model });
+    if (car.generation) params.set("generation", car.generation);
+    router.push(`/garage/${car.id}?${params.toString()}`);
+  };
 
   const seedNewBranch = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -114,9 +137,9 @@ export function Landing() {
           </span>
         </div>
         <div className="hidden items-center gap-8 text-sm font-medium text-muted md:flex">
-          <a href="#" className="transition-colors hover:text-ink">
-            Explore Branches
-          </a>
+          <Link href="/ecosystem" className="transition-colors hover:text-ink">
+            Ecosystem Pulse
+          </Link>
           <a href="#" className="transition-colors hover:text-ink">
             Community Build Logs
           </a>
@@ -171,7 +194,7 @@ export function Landing() {
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => results.length && setOpen(true)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && results[0]) go(results[0].id);
+                  if (e.key === "Enter" && results[0]) go(results[0]);
                   if (e.key === "Escape") setOpen(false);
                 }}
                 placeholder="Search for your car (e.g. Toyota Corolla, BMW M3...)"
@@ -179,7 +202,7 @@ export function Landing() {
               />
               <button
                 type="button"
-                onClick={() => results[0] && go(results[0].id)}
+                onClick={() => results[0] && go(results[0])}
                 className="rounded-xl bg-accent px-8 py-4 font-bold text-white transition-all hover:brightness-110 active:scale-95"
               >
                 START MODDING
@@ -192,7 +215,7 @@ export function Landing() {
                   <li key={c.id} className="border-b border-line last:border-0">
                     <button
                       type="button"
-                      onClick={() => go(c.id)}
+                      onClick={() => go(c)}
                       className="focus-ring flex w-full items-center justify-between px-5 py-3 text-left hover:bg-surface-hover"
                     >
                       <span className="text-base font-medium text-ink">
@@ -213,12 +236,47 @@ export function Landing() {
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => go(c.id)}
+                  onClick={() => go(c)}
                   className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-muted transition-all hover:border-line-strong hover:text-ink"
                 >
                   {c.label}
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Hero Showcase — glass badge, dual accent glow (120px blur), noise-textured backdrop */}
+        <div className="hero-showcase mt-24 w-full max-w-5xl">
+          <div className="relative overflow-hidden rounded-[40px] border border-line">
+            <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-accent opacity-25 blur-[120px]" />
+            <div className="pointer-events-none absolute -bottom-20 -right-10 h-72 w-72 rounded-full bg-accent-blue opacity-25 blur-[120px]" />
+
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://images.unsplash.com/photo-1756990637536-714b76296a30?q=80&w=2000&auto=format&fit=crop"
+              alt="Modified Porsche 911 Carrera, rear three-quarter view with glowing tail light bar"
+              className="h-[420px] w-full object-cover md:h-[540px]"
+            />
+
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black via-black/40 to-transparent" />
+
+            <div className="hero-showcase-badge animate-float absolute bottom-6 left-6 flex items-center gap-3 rounded-2xl px-4 py-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/20 text-accent">
+                <GitBranch size={16} />
+              </div>
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-muted-2">
+                  Community Build
+                </p>
+                <p className="heading-font text-sm font-bold text-ink">
+                  911 Carrera · Stage 3
+                </p>
+              </div>
+            </div>
+
+            <div className="absolute right-6 top-6 rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white/80 backdrop-blur-md">
+              Every build starts here
             </div>
           </div>
         </div>

@@ -1,14 +1,10 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ChevronDown, GitBranch, Car as CarIcon } from "lucide-react";
-import {
-  getAttributeGroups,
-  getCar,
-  getGraph,
-  createBranch,
-} from "@/lib/api";
+import { getAttributeGroups, getCar, getGraph } from "@/lib/api";
 import type { AttributeGroup, BuildNodeData, Car } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { filterMatchingIds } from "@/lib/graph-utils";
@@ -16,6 +12,7 @@ import { TreeCanvas, EmptyGarage } from "@/components/graph/TreeCanvas";
 import { AttributePanel } from "@/components/navigator/AttributePanel";
 import { AiSearchBar } from "@/components/navigator/AiSearchBar";
 import { PulseStrip } from "@/components/navigator/PulseStrip";
+import { SavedMods } from "@/components/navigator/SavedMods";
 
 export default function GaragePage({
   params,
@@ -23,23 +20,50 @@ export default function GaragePage({
   params: Promise<{ carId: string }>;
 }) {
   const { carId } = use(params);
+  const searchParams = useSearchParams();
+  // Cars with no curated generation data can't be resolved from a bare
+  // carId server-side, so the search flow passes make/model/generation
+  // through as a fallback for the create-on-first-visit path.
+  const fallbackMake = searchParams.get("make");
+  const fallbackModel = searchParams.get("model");
+  const fallback =
+    fallbackMake && fallbackModel
+      ? {
+          make: fallbackMake,
+          model: fallbackModel,
+          generation: searchParams.get("generation") ?? undefined,
+        }
+      : undefined;
   const [car, setCar] = useState<Car | null>(null);
   const [groups, setGroups] = useState<AttributeGroup[]>([]);
   const [graph, setGraph] = useState<BuildNodeData[]>([]);
   const [loading, setLoading] = useState(true);
-  const { activeFilters, setFlashNodeId, openAddBranchModal } = useAppStore();
+  const [projectMenuOpen, setProjectMenuOpen] = useState(false);
+  const projectMenuRef = useRef<HTMLDivElement>(null);
+  const {
+    activeFilters,
+    focusedBranchId,
+    openAddBranchModal,
+    setFocusedBranchId,
+  } = useAppStore();
 
   const load = async () => {
     setLoading(true);
-    const [c, g, gr] = await Promise.all([
-      getCar(carId),
-      getAttributeGroups(carId),
-      getGraph(carId),
-    ]);
-    setCar(c);
-    setGroups(g);
-    setGraph(gr);
-    setLoading(false);
+    try {
+      // Graph resolves (and creates, if needed) the car first — attributes
+      // 404 until the car exists, so it can't run in parallel with this.
+      const gr = await getGraph(carId, fallback);
+      const [c, g] = await Promise.all([getCar(carId), getAttributeGroups(carId)]);
+      setCar(c);
+      setGroups(g);
+      setGraph(gr);
+    } catch {
+      setCar(null);
+      setGroups([]);
+      setGraph([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -60,16 +84,27 @@ export default function GaragePage({
     [graph],
   );
 
-  const handlePlant = async () => {
-    const root = await createBranch([], {
-      carId,
-      title: "Stock",
-      attributes: ["stock", "stock-height", "none"],
-      summary: "Factory baseline. The trunk everything grows from.",
-    });
-    setFlashNodeId(root.id);
-    await load();
-    setTimeout(() => setFlashNodeId(null), 1000);
+  const rootChildren = useMemo(
+    () => (rootId ? graph.filter((n) => n.parentIds.includes(rootId)) : []),
+    [graph, rootId],
+  );
+
+  useEffect(() => {
+    if (!projectMenuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!projectMenuRef.current?.contains(e.target as Node)) {
+        setProjectMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [projectMenuOpen]);
+
+  // Every valid carId auto-creates its stock root on the first `getGraph`
+  // call — there's no separate "plant" step anymore. If we land here it's
+  // because the car couldn't be resolved at all; retry the load.
+  const handlePlant = () => {
+    void load();
   };
 
   const handleStartBranch = () => {
@@ -130,13 +165,72 @@ export default function GaragePage({
                     {car.make.toUpperCase()} {car.model.toUpperCase()}
                   </p>
                 </div>
-                <ChevronDown className="h-4 w-4 shrink-0 text-muted" />
+              </div>
+            )}
+
+            {rootChildren.length > 0 && (
+              <div ref={projectMenuRef} className="relative mt-3">
+                <button
+                  type="button"
+                  onClick={() => setProjectMenuOpen((o) => !o)}
+                  className="focus-ring flex w-full items-center justify-between gap-3 rounded-2xl border border-white/5 bg-white/5 p-3 text-left transition-colors hover:bg-white/10"
+                >
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[9px] font-bold uppercase tracking-widest text-muted">
+                      Select Modification
+                    </h3>
+                    <p className="heading-font truncate text-xs font-bold text-ink">
+                      {focusedBranchId
+                        ? (rootChildren.find((b) => b.id === focusedBranchId)?.title ??
+                          "Choose a branch")
+                        : "Choose a branch"}
+                    </p>
+                  </div>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-muted transition-transform ${
+                      projectMenuOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {projectMenuOpen && (
+                  <div className="floating-modal absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl">
+                    <p className="px-4 pb-2 pt-3 text-[9px] font-bold uppercase tracking-widest text-muted">
+                      Jump into a branch
+                    </p>
+                    <div className="divide-y divide-line">
+                      {rootChildren.map((b) => {
+                        const active = focusedBranchId === b.id;
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => {
+                              setFocusedBranchId(b.id);
+                              setProjectMenuOpen(false);
+                            }}
+                            className={`focus-ring flex w-full items-center justify-between px-4 py-3 text-left text-[12px] font-semibold transition-colors hover:bg-white/5 ${
+                              active ? "text-accent" : "text-ink-soft"
+                            }`}
+                          >
+                            {b.title}
+                            {active && <span className="text-[10px]">● shown</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           <div className="scroll-soft flex-1 space-y-6 overflow-y-auto p-6">
             <PulseStrip carId={carId} />
+
+            <div className="h-px bg-line" />
+
+            <SavedMods carId={carId} />
 
             <div className="h-px bg-line" />
 

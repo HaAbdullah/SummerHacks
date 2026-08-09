@@ -136,8 +136,12 @@ def _to_disk(path: str, data: bytes) -> str:
     Files land under data/uploads/ and are served by the API's /media mount. They do not
     survive a redeploy on an ephemeral host — which is exactly why Supabase Storage is
     the real answer.
+
+    Returns an absolute URL so the Next.js frontend (different origin) can load the
+    image without rewriting. Relative `/media/...` would resolve against localhost:3000.
     """
     target = UPLOAD_DIR / path
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(data)
-    return f"/media/{path}"
+    # Absolute API origin — relative `/media/...` would resolve against Next.js (:3000).
+    return f"http://localhost:{settings.port}/media/{path}"

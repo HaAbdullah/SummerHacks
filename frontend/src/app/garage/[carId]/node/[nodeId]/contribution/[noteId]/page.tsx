@@ -4,6 +4,7 @@ import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mic, Send } from "lucide-react";
 import { addContributionReply, getContribution, getContributionReplies } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/media-url";
 import type { Note, NoteReply } from "@/lib/types";
 
 function timeAgo(iso: string): string {
@@ -76,12 +77,13 @@ export default function ContributionPage({
     );
   }
 
+  const mediaSrc = resolveMediaUrl(note.mediaUrl);
   const hasMedia =
     (note.kind === "image" ||
       note.kind === "sketch" ||
       note.kind === "video" ||
       note.kind === "blueprint") &&
-    !!note.mediaUrl;
+    !!mediaSrc;
 
   return (
     <div className="flex h-screen flex-col bg-bg">
@@ -122,9 +124,11 @@ export default function ContributionPage({
             <div className="mb-4 overflow-hidden rounded-xl bg-black/40">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={note.mediaUrl}
+                src={mediaSrc}
                 alt={note.body ?? note.kind}
-                className="max-h-[480px] w-full object-cover"
+                className={`max-h-[480px] w-full ${
+                  note.kind === "sketch" ? "object-contain bg-white" : "object-cover"
+                }`}
               />
             </div>
           )}

@@ -221,6 +221,64 @@ class Stats(BaseModel):
     hottestNodeId: str = ""
 
 
+# --- ecosystem analytics (dashboard) -----------------------------------------------
+
+class AnalyticsKpi(BaseModel):
+    value: int
+    deltaPct: float  # vs previous equal-length window; 0 if no baseline
+
+
+class ActivityDay(BaseModel):
+    day: str                 # e.g. MON, THU (NOW)
+    commits: int             # posts + non-merge nodes created that day
+    merges: int              # merge nodes created that day
+    isFuture: bool = False
+
+
+class TrendingBranch(BaseModel):
+    rank: int
+    carId: str
+    label: str
+    growthPct: float
+    heatPct: float           # 0–100 bar width, relative to top car
+    accent: Literal["red", "blue", "yellow"] = "red"
+
+
+class TopBuilder(BaseModel):
+    handle: str
+    avatarSeed: str
+    contributions: int
+    ring: Literal["red", "blue", "neutral"] = "neutral"
+
+
+class EcosystemNetwork(BaseModel):
+    status: Literal["STABLE", "DEGRADED", "HOT"]
+    avgBranchDepth: float
+    depthPct: float          # 0–100 meter fill
+    diversityPct: float      # 0–100 unique-mod coverage
+
+
+class EcosystemKpis(BaseModel):
+    totalForks: AnalyticsKpi
+    activeBuilders: AnalyticsKpi
+    newSeeds: AnalyticsKpi
+    totalMerges: AnalyticsKpi
+
+
+class EcosystemAnalytics(BaseModel):
+    """Platform-wide rollup for the Ecosystem Pulse dashboard.
+
+    Every number is counted from stored cars/nodes/posts/replies — nothing invented.
+    """
+
+    range: Literal["7d", "30d", "90d"]
+    kpis: EcosystemKpis
+    activity: list[ActivityDay]
+    network: EcosystemNetwork
+    trending: list[TrendingBranch]
+    builders: list[TopBuilder]
+
+
 # --- AI (Ahmed) --------------------------------------------------------------------
 
 class ModChange(BaseModel):

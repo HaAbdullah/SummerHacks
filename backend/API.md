@@ -108,6 +108,7 @@ tag traces back to one slot (`engine-turbo`, `brakes-bbk`, `wheels-allterrain`).
 | GET | `/cars` | All cars that have a graph |
 | GET | `/cars/{carId}` | One car |
 | GET | `/cars/{carId}/stats` | **getStats** — real counts |
+| GET | `/ecosystem/analytics?range=` | **getEcosystemAnalytics** — platform Pulse rollup (`7d`/`30d`/`90d`) |
 | GET | `/attributes` | **getAttributes** — full tag vocabulary |
 | GET | `/cars/{carId}/attributes` | **getAttributes** for one car — tags in use, with counts |
 | POST | `/cars/{carId}/nodes` | **createNode** — auto-places if `parentIds` omitted |
