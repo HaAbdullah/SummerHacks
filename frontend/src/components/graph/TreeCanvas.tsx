@@ -635,18 +635,75 @@ export function TreeCanvas({
   );
 }
 
-export function EmptyGarage({ onPlant }: { onPlant?: () => void }) {
+export function EmptyGarage({
+  carLabel,
+  onCreateFirst,
+  onRetry,
+  mode = "first",
+}: {
+  carLabel?: string;
+  /** Open the create-first-node menu (empty garage, you're first). */
+  onCreateFirst?: () => void;
+  /** Retry load when the car couldn't be resolved at all. */
+  onRetry?: () => void;
+  mode?: "first" | "error";
+}) {
+  if (mode === "error") {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 px-8">
+        <div className="h-16 w-16 rounded-full border border-dashed border-line-strong bg-surface" />
+        <div className="h-8 w-px bg-line" />
+        <h2 className="font-display text-[22px] text-ink">
+          Couldn&apos;t open this car
+        </h2>
+        <p className="max-w-xs text-center text-ui text-muted">
+          This build tree failed to load — it may not exist yet.
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="btn btn-primary btn-lg focus-ring"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 px-8">
-      <div className="h-16 w-16 rounded-full border border-dashed border-line-strong bg-surface" />
-      <div className="h-8 w-px bg-line" />
-      <h2 className="font-display text-[22px] text-ink">Couldn&apos;t open this car</h2>
-      <p className="max-w-xs text-center text-ui text-muted">
-        This build tree failed to load — it may not exist yet.
-      </p>
-      <button type="button" onClick={onPlant} className="btn btn-primary btn-lg focus-ring">
-        Retry
+    <div className="flex h-full flex-col items-center justify-center gap-5 px-8">
+      <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-accent/40 bg-accent/10">
+        <span className="heading-font text-2xl font-bold text-accent">1st</span>
+      </div>
+      <div className="max-w-md text-center">
+        <h2 className="font-display text-[26px] tracking-tight text-ink">
+          You&apos;re the first one here
+        </h2>
+        <p className="mt-2 text-ui leading-relaxed text-muted">
+          {carLabel ? (
+            <>
+              Nobody has planted a build tree for{" "}
+              <span className="font-semibold text-ink-soft">{carLabel}</span>{" "}
+              yet. Create the first node to open this garage.
+            </>
+          ) : (
+            <>
+              Nobody has planted a build tree for this car yet. Create the first
+              node to open this garage.
+            </>
+          )}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onCreateFirst}
+        className="btn btn-primary btn-xl heading-font focus-ring font-black uppercase tracking-wide"
+      >
+        Create first node
       </button>
+      <p className="text-[11px] text-muted-2">
+        You&apos;ll set a title, optional mods, and a cover image.
+      </p>
     </div>
   );
 }

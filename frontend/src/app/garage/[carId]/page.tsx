@@ -9,6 +9,7 @@ import type { AttributeGroup, BuildNodeData, Car } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { filterMatchingIds } from "@/lib/graph-utils";
 import { TreeCanvas, EmptyGarage } from "@/components/graph/TreeCanvas";
+import { PlantRootModal } from "@/components/graph/PlantRootModal";
 import { AttributePanel } from "@/components/navigator/AttributePanel";
 import { AiSearchBar } from "@/components/navigator/AiSearchBar";
 import { PulseStrip } from "@/components/navigator/PulseStrip";
@@ -38,6 +39,8 @@ export default function GaragePage({
   const [groups, setGroups] = useState<AttributeGroup[]>([]);
   const [graph, setGraph] = useState<BuildNodeData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [plantOpen, setPlantOpen] = useState(false);
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const projectMenuRef = useRef<HTMLDivElement>(null);
   const {
@@ -49,11 +52,15 @@ export default function GaragePage({
 
   const load = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
-      // Graph resolves (and creates, if needed) the car first — attributes
-      // 404 until the car exists, so it can't run in parallel with this.
+      // Ensures the car shell exists (no silent root plant). Empty nodes
+      // means you're first — we prompt before creating a node.
       const gr = await getGraph(carId, fallback);
-      const [c, g] = await Promise.all([getCar(carId), getAttributeGroups(carId)]);
+      const [c, g] = await Promise.all([
+        getCar(carId, fallback),
+        getAttributeGroups(carId).catch(() => [] as AttributeGroup[]),
+      ]);
       setCar(c);
       setGroups(g);
       setGraph(gr);
@@ -61,6 +68,7 @@ export default function GaragePage({
       setCar(null);
       setGroups([]);
       setGraph([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -100,13 +108,6 @@ export default function GaragePage({
     return () => document.removeEventListener("mousedown", onDown);
   }, [projectMenuOpen]);
 
-  // Every valid carId auto-creates its stock root on the first `getGraph`
-  // call — there's no separate "plant" step anymore. If we land here it's
-  // because the car couldn't be resolved at all; retry the load.
-  const handlePlant = () => {
-    void load();
-  };
-
   const handleStartBranch = () => {
     if (rootId) openAddBranchModal(rootId);
   };
@@ -117,7 +118,8 @@ export default function GaragePage({
     openAddBranchModal(rootId, presetAttributes);
   };
 
-  const empty = !loading && graph.length === 0;
+  const empty = !loading && !loadError && graph.length === 0;
+  const carLabel = car ? `${car.make} ${car.model}` : undefined;
 
   return (
     <div className="relative h-screen w-full min-w-[1080px] overflow-hidden bg-bg">
@@ -127,15 +129,32 @@ export default function GaragePage({
           <div className="flex h-full items-center justify-center text-ui text-muted">
             Opening garage…
           </div>
+        ) : loadError ? (
+          <EmptyGarage mode="error" onRetry={() => void load()} />
         ) : empty ? (
-          <EmptyGarage onPlant={() => void handlePlant()} />
+          <EmptyGarage
+            carLabel={carLabel}
+            onCreateFirst={() => setPlantOpen(true)}
+          />
         ) : (
           <TreeCanvas carId={carId} onGraphChange={setGraph} />
         )}
       </main>
 
+      {plantOpen && (
+        <PlantRootModal
+          carId={carId}
+          car={car}
+          onClose={() => setPlantOpen(false)}
+          onCreated={() => {
+            setPlantOpen(false);
+            void load();
+          }}
+        />
+      )}
+
       {/* Floating left panel — a modal-like card resting on the dotted canvas. */}
-      {!loading && !empty && (
+      {!loading && !empty && !loadError && (
         <aside className="floating-modal absolute bottom-8 left-8 top-8 z-40 flex w-[23vw] min-w-[380px] max-w-[500px] flex-col overflow-hidden rounded-[32px]">
           <div className="border-b border-line p-6">
             <div className="mb-6 flex items-center gap-2">

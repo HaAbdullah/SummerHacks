@@ -99,8 +99,11 @@ def get_or_create_by_car_id(car_id: str) -> Graph | None:
 
 
 def _create_graph(car_id: str, record: dict) -> dict:
-    """createDAG. Every car starts with one stock root — the trunk builds grow from."""
-    root_id = f"{car_id}-root"
+    """Register a car shell without a root node.
+
+    The first user to open an empty garage is prompted to plant the first node —
+    we do not silently invent a stock root for them.
+    """
     car = {
         "id": car_id,
         "make": record["make"],
@@ -110,26 +113,9 @@ def _create_graph(car_id: str, record: dict) -> dict:
         "yearEnd": record["yearEnd"],
         "yearRange": record["years"],
         "heroImage": record.get("heroImage"),
-        "rootNodeId": root_id,
+        "rootNodeId": "",
     }
     store.put("cars", car_id, car)
-    make, model = record["make"], record["model"]
-    year_range = record["years"]
-
-    root = Node(
-        id=root_id,
-        carId=car_id,
-        title=f"Stock {model}",
-        parentIds=[],
-        attributes=[],
-        mods=Mods(),
-        summary="Factory baseline. The trunk everything grows from.",
-        createdBy="modbranch",
-        createdAt=_now(),
-        isRoot=True,
-        stats=NodeStats(heat=1.0, contributors=1, notes=0, forks=0),
-    )
-    store.put("nodes", root_id, root.model_dump())
     return car
 
 
@@ -174,7 +160,8 @@ def get_node(node_id: str) -> NodeDetail | None:
 
 def create_node(car_id: str, req: CreateNodeRequest) -> Node | None:
     """createNode. Places the build in the graph when no parents are given."""
-    if store.get("cars", car_id) is None:
+    car = store.get("cars", car_id)
+    if car is None:
         return None
 
     existing = store.find("nodes", carId=car_id)
@@ -186,7 +173,18 @@ def create_node(car_id: str, req: CreateNodeRequest) -> Node | None:
         known = {n["id"] for n in existing}
         parent_ids = [p for p in parent_ids if p in known]
 
-    node_id = f"{car_id}-{slugify(req.title)}-{int(datetime.now().timestamp() * 1000) % 100000}"
+    # Explicit empty parentIds = plant a root (first build on this car).
+    # Only one root is allowed — further empty plants attach to the existing root.
+    existing_roots = [n for n in existing if not (n.get("parentIds") or [])]
+    if not parent_ids and existing_roots:
+        parent_ids = [existing_roots[0]["id"]]
+
+    is_root = not parent_ids
+    node_id = (
+        f"{car_id}-root"
+        if is_root
+        else f"{car_id}-{slugify(req.title)}-{int(datetime.now().timestamp() * 1000) % 100000}"
+    )
 
     node = Node(
         id=node_id,
@@ -201,17 +199,21 @@ def create_node(car_id: str, req: CreateNodeRequest) -> Node | None:
         heroImage=req.heroImage,
         createdBy=req.createdBy,
         createdAt=_now(),
-        isRoot=not parent_ids,
+        isRoot=is_root,
         slot=placement.slot_for(req.mods),
-        level=placement.level_for(req.mods),
+        level=placement.level_for(req.mods) if not is_root else 0,
         stats=NodeStats(
             forks=0,
             notes=0,
             contributors=1,
-            heat=0.7 if len(parent_ids) > 1 else 0.45,
+            heat=1.0 if is_root else (0.7 if len(parent_ids) > 1 else 0.45),
         ),
     )
     store.put("nodes", node_id, node.model_dump())
+
+    if is_root:
+        car["rootNodeId"] = node_id
+        store.put("cars", car_id, car)
 
     for parent_id in parent_ids:
         parent = store.get("nodes", parent_id)

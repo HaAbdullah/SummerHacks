@@ -62,7 +62,8 @@ def get_car(car_id: str) -> Car:
 def get_graph_by_id(car_id: str) -> Graph:
     """getDAG by generation id — the id a vehicle search result carries.
 
-    Creates the graph on first visit, so a search result is always clickable.
+    Ensures the car shell exists on first visit (nodes may be empty). The first
+    user plants a root via POST /cars/{id}/nodes with parentIds=[].
     """
     graph = graph_service.get_or_create_by_car_id(car_id)
     if graph is None:
@@ -77,7 +78,7 @@ def get_or_create_graph(
     generation: str | None = Query(None, description="e.g. E210"),
     year: int | None = Query(None, ge=1981, le=2027, description="e.g. 2018"),
 ) -> Graph:
-    """getDAG. Creates the car and its stock root if this is the first visit.
+    """getDAG. Ensures the car shell exists (empty until someone plants a root).
 
     A graph is per GENERATION, not per model — mods are generation-specific. Pass
     `generation` outright, or a `year` to resolve it. With neither, the newest generation

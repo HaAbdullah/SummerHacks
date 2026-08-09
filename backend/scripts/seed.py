@@ -36,6 +36,23 @@ PRESERVED = (
     "task_dependencies",
 )
 
+# Local car photos under data/uploads/cars/ (served at /media/cars/...).
+# Absolute so the Next.js frontend (different origin) can load them.
+_MEDIA = "http://localhost:8000/media/cars"
+_COROLLA_IMGS = [f"{_MEDIA}/corolla-{i:02d}.jpg" for i in range(1, 9)]
+_CIVIC_IMGS = [f"{_MEDIA}/civic-{i:02d}.jpg" for i in range(1, 9)]
+
+
+def _hero_for(car_id: str, key: str) -> str | None:
+    """Pick a real Corolla or Civic image; other cars stay without a forced photo."""
+    cl = car_id.lower()
+    h = sum(ord(c) for c in key) & 0xFFFFFFFF
+    if "corolla" in cl:
+        return _COROLLA_IMGS[h % len(_COROLLA_IMGS)]
+    if "civic" in cl:
+        return _CIVIC_IMGS[h % len(_CIVIC_IMGS)]
+    return None
+
 
 def ago(hours: float) -> str:
     return (NOW - timedelta(hours=hours)).isoformat().replace("+00:00", "Z")
@@ -85,7 +102,7 @@ def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
         "yearStart": spec["yearStart"],
         "yearEnd": spec["yearEnd"],
         "yearRange": spec["yearRange"],
-        "heroImage": None,
+        "heroImage": _hero_for(car_id, car_id),
         "rootNodeId": root_id,
     }
 
@@ -96,7 +113,8 @@ def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
         id=root_id, carId=car_id, title=spec["rootTitle"], parentIds=[],
         attributes=[], mods=root_mods,
         summary="Factory baseline. The trunk everything grows from.",
-        heroImage=f"https://picsum.photos/seed/{root_id}-hero/1000/560",
+        heroImage=_hero_for(car_id, root_id)
+        or f"https://picsum.photos/seed/{root_id}-hero/1000/560",
         createdBy=SYSTEM_AUTHOR, createdAt=ago(760), isRoot=True,
         slot=None, level=0,
         stats=NodeStats(forks=0, notes=0, contributors=1, heat=1.0),
@@ -107,7 +125,8 @@ def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
         nodes[node_id] = Node(
             id=node_id, carId=car_id, title=title, parentIds=parents,
             attributes=tagging.tags_for(mod_obj), mods=mod_obj, summary=summary,
-            heroImage=f"https://picsum.photos/seed/{node_id}-hero/1000/560",
+            heroImage=_hero_for(car_id, node_id)
+            or f"https://picsum.photos/seed/{node_id}-hero/1000/560",
             createdBy=primary(author), createdAt=ago(hours), isRoot=False,
             slot=placement.slot_for(mod_obj), level=placement.level_for(mod_obj),
             stats=NodeStats(forks=0, notes=0, contributors=1, heat=heat),
@@ -121,17 +140,19 @@ def build_car(spec: dict) -> tuple[dict, dict, dict, dict]:
             # A pinned author overrides the cast spread. Before/after recordings claim
             # to be the same person's car, so they must carry the same handle.
             who = opts.get("as") or contributor(author, post_id)
+            if opts.get("audio"):
+                media_url = f"/audio/{opts['audio']}"
+            elif opts.get("media"):
+                media_url = _hero_for(car_id, post_id) or (
+                    f"https://picsum.photos/seed/{post_id}/800/500"
+                )
+            else:
+                media_url = None
             posts[post_id] = CommunityPost(
                 id=post_id, nodeId=node_id, author=who,
                 avatarColor=community_service._avatar_color(who),
                 kind=kind, title=title, body=body,
-                mediaUrl=(
-                    # Real committed audio wins over a placeholder image: these are the
-                    # clips a judge will actually press play on.
-                    f"/audio/{opts['audio']}" if opts.get("audio")
-                    else f"https://picsum.photos/seed/{post_id}/800/500"
-                    if opts.get("media") else None
-                ),
+                mediaUrl=media_url,
                 durationSec=opts.get("duration"),
                 transcribed=opts.get("transcribed", True),
                 createdAt=ago(hours),
