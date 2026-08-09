@@ -54,6 +54,9 @@ FIELD_MAP: dict[str, dict[str, str]] = {
     "replies": {
         "postId": "post_id",
         "avatarColor": "avatar_color",
+        "mediaUrl": "media_url",
+        "storagePath": "storage_path",
+        "durationSec": "duration_sec",
         "createdAt": "created_at",
     },
     "parts": {

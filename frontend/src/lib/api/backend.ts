@@ -186,14 +186,32 @@ export async function getReplies(postId: string): Promise<NoteReply[]> {
   return apiFetch(`/posts/${encodeURIComponent(postId)}/replies`);
 }
 
+export interface CreateReplyRequest {
+  kind?: string;
+  body?: string;
+  mediaUrl?: string;
+  durationSec?: number;
+  author?: string;
+}
+
 export async function createReply(
   postId: string,
-  body: string,
-  author = "You",
+  req: CreateReplyRequest,
 ): Promise<NoteReply> {
   return apiFetch(`/posts/${encodeURIComponent(postId)}/replies`, {
     method: "POST",
-    body: JSON.stringify({ body, author }),
+    body: JSON.stringify(req),
+  });
+}
+
+/** Upload a real file (image/sketch/voice) as a reply, same shape as uploadPost. */
+export async function uploadReply(
+  postId: string,
+  form: FormData,
+): Promise<NoteReply> {
+  return apiFetch(`/posts/${encodeURIComponent(postId)}/replies/upload`, {
+    method: "POST",
+    body: form,
   });
 }
 

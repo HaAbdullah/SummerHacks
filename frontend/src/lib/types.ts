@@ -31,7 +31,11 @@ export interface NoteReply {
   postId: string;
   author: string;
   avatarColor: string;
+  kind: MediaKind;
   body: string;
+  mediaUrl?: string;
+  storagePath?: string;
+  durationSec?: number;
   createdAt: string;
 }
 

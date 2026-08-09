@@ -93,14 +93,30 @@ create index if not exists posts_node_idx on posts (node_id, created_at desc);
 
 -- ------------------------------------------------------------------------- replies
 
+-- Same four media kinds as posts, and the same rule for `body`: the author's own words
+-- if given, otherwise a transcription placeholder (see services/transcription.py) — a
+-- reply is never just a bare, unsearchable media blob.
 create table if not exists replies (
   id           text primary key,
   post_id      text not null references posts(id) on delete cascade,
   author       text not null,
   avatar_color text not null default '#d5001c',
-  body         text not null,
+  kind         text not null default 'text' check (kind in ('text','image','sketch','voice','video','blueprint')),
+  body         text not null default '',
+  media_url    text,
+  storage_path text,
+  duration_sec int,
   created_at   timestamptz not null default now()
 );
+
+-- Existing deployments: replies predates kind/media support.
+alter table replies add column if not exists kind         text not null default 'text';
+alter table replies add column if not exists media_url    text;
+alter table replies add column if not exists storage_path text;
+alter table replies add column if not exists duration_sec int;
+alter table replies drop constraint if exists replies_kind_check;
+alter table replies add  constraint replies_kind_check
+  check (kind in ('text','image','sketch','voice','video','blueprint'));
 
 create index if not exists replies_post_idx on replies (post_id, created_at);
 
