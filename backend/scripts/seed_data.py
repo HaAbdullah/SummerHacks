@@ -120,11 +120,10 @@ COROLLA = {
              "will hear it rattling at every light.", 610, {}),
         ],
         "c-turbo": [
-            ("ahmed", "voice", "Stock exhaust, for reference",
-             "Grabbed this before the catback went on so there's something to compare "
-             "against later. Turbo's already in, exhaust is completely stock. You can "
-             "hear it spool around 3200 but the stock box eats most of it.",
-             615, {"duration": 55, "audio": "stock.mp3", "as": "boosted_2zr"}),
+            ("ahmed", "voice", "Corolla revving — 8psi spool",
+             "Cold start then three pulls to redline. Spool comes in around 3200 and "
+             "you can hear the blow-off between shifts. No rattle on overrun, so the "
+             "wastegate is holding.", 615, {"duration": 27}),
             ("shoaib", "text", "Boost ceiling on a stock block",
              "8psi has held for 20k miles on mine. Everyone I know who pushed past 10 on "
              "a stock bottom end lost ringlands within a season.", 610, {}),
@@ -149,11 +148,6 @@ COROLLA = {
              "something fell off.", 11, {"media": True}),
         ],
         "c-turbo-3in": [
-            ("ahmed", "voice", "Check this out — 3in catback on",
-             "Same car, same road, same pull as the clip on the stock node. One week "
-             "later. Turn it up, the difference is not subtle. Spool is way more "
-             "obvious now that the muffler isn't smothering it.",
-             528, {"duration": 56, "audio": "modded.mp3", "as": "boosted_2zr"}),
             ("kshitij", "sketch", "Downpipe clearance sketch",
              "Where the 3in downpipe fouls the steering rack. Needs a dimple or you will "
              "feel it through the wheel at idle.", 530, {"media": True}),
@@ -243,9 +237,7 @@ COROLLA = {
         ("c-turbo", 0, "kshitij", "That spool sounds way earlier than mine. Twin-scroll manifold?", 612),
         ("c-rally", 0, "shoaib", "Smart call. Everyone chases peak numbers then cooks the motor on stage 3.", 4),
         ("c-built-gravel", 0, "abdullah", "Any speedo error on the taller tyre?", 412),
-        ("c-turbo-3in", 0, "shoaib", "Okay that actually sounds mean. How is it at 70 on the highway?", 520),
-        ("c-turbo-3in", 0, "abdullah", "Went back and played the stock one right after. Not even the same car.", 515),
-        ("c-turbo", 0, "kshitij", "Appreciate you posting the before. Nobody ever does.", 600),
+        ("c-turbo", 0, "kshitij", "That spool is earlier than mine. Are you on the twin-scroll manifold?", 600),
     ],
 }
 
@@ -343,6 +335,11 @@ CIVIC = {
              "timing and you will wonder where the power went.", 566, {}),
         ],
         "h-si": [
+            ("ahmed", "voice", "Stock Si exhaust, for reference",
+             "Recording this before anything goes on the exhaust so there's a baseline "
+             "to compare against. K20C2, stock everything from the turbo back. It is "
+             "quiet — almost disappointingly so for what the engine actually is.",
+             558, {"duration": 55, "audio": "stock.mp3", "as": "k20c2_si"}),
             ("ahmed", "text", "The factory LSD changes everything",
              "Coming from the 1.5T, the Si putting power down out of a corner is the "
              "real upgrade. The extra 25hp is almost incidental.", 555, {}),
@@ -370,6 +367,11 @@ CIVIC = {
              "was not.", 490, {"media": True}),
         ],
         "h-si-3in": [
+            ("ahmed", "voice", "Check this out — 3in turbo-back on",
+             "Same car, same road, same gear as the clip up on the Si node. Downpipe "
+             "and catback both done. Turn it up. You can finally hear the turbo doing "
+             "something instead of the muffler eating all of it.",
+             476, {"duration": 56, "audio": "modded.mp3", "as": "k20c2_si"}),
             ("ahmed", "text", "Downpipe is worth more than the catback",
              "Most of the gain was the downpipe. The catback was mostly noise — worth "
              "doing in that order if you are spreading the cost.", 475, {}),
@@ -445,6 +447,9 @@ CIVIC = {
         ("h-k24", 0, "kshitij", "Those ITBs sound incredible. What throttle bodies?", 530),
         ("h-si-bbk", 0, "shoaib", "How are they on the street? Worried about cold bite.", 270),
         ("h-hybrid", 0, "abdullah", "This is the most interesting build on the whole site.", 7),
+        ("h-si-3in", 0, "shoaib", "Okay that actually sounds mean. How is it at 70 on the highway?", 470),
+        ("h-si-3in", 0, "abdullah", "Played the stock clip right after this one. Not even the same car.", 466),
+        ("h-si", 0, "kshitij", "Appreciate you posting the before. Nobody ever does.", 552),
     ],
 }
 
@@ -659,7 +664,9 @@ WRX = {
 }
 
 
-ALL_CARS = [COROLLA, CIVIC, WRX]
+# Civic leads: it carries the exhaust before/after pair and the most voice notes, so any
+# UI that shows "a car" without being told which should show that one.
+ALL_CARS = [CIVIC, COROLLA, WRX]
 
 
 # --- who the community is -----------------------------------------------------------
