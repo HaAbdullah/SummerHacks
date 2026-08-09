@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Activity, ArrowRight, GitBranch, ScanLine } from "lucide-react";
+import { FaDiscord, FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { getEcosystemAnalytics } from "@/lib/api";
 import type { EcosystemAnalytics } from "@/lib/types";
 import { STAGES, clamp, scrollState } from "./stages";
 import { AuthModal, type AuthMode } from "./AuthModal";
 import { BranchDiagram } from "./BranchDiagram";
 import { CarSearch } from "./CarSearch";
+import { FeaturedGrid } from "./FeaturedGrid";
 import { LiveFromGraph } from "./LiveFromGraph";
 import { useReveal } from "./use-reveal";
 import styles from "./landing-v2.module.css";
@@ -143,6 +145,20 @@ export function LandingV2() {
             <ScanLine size={14} className="text-accent" />
             Engine Analysis
           </Link>
+          {/* Carried over from the original landing nav — still placeholders
+              there, kept here so nothing silently disappears in the swap. */}
+          <a
+            href="#featured"
+            className="hidden px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted transition-colors hover:text-ink xl:block"
+          >
+            Build Logs
+          </a>
+          <a
+            href="#featured"
+            className="hidden px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted transition-colors hover:text-ink xl:block"
+          >
+            Showcase
+          </a>
 
           <span className="mx-1 hidden h-5 w-px bg-line-strong sm:block" />
 
@@ -300,6 +316,41 @@ export function LandingV2() {
           </div>
         </div>
       </section>
+
+      {/* ——— featured branches ——— */}
+      {analytics && (
+        <section
+          id="featured"
+          className="relative z-10 scroll-mt-20 border-t border-line bg-bg px-6 py-24 md:px-12"
+        >
+          <div className="mx-auto max-w-6xl">
+            <div className="flex flex-wrap items-end justify-between gap-5">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-accent">
+                  Trending now
+                </p>
+                <h2 className="heading-font mt-4 text-4xl font-extrabold leading-[0.95] tracking-tighter md:text-5xl">
+                  POPULAR BRANCHES
+                </h2>
+              </div>
+              <Link
+                href="/ecosystem"
+                className="group flex items-center gap-2 text-sm text-muted transition-colors hover:text-ink"
+              >
+                View all showcase
+                <ArrowRight
+                  size={15}
+                  className="transition-transform group-hover:translate-x-1"
+                />
+              </Link>
+            </div>
+
+            <div className="mt-10">
+              <FeaturedGrid data={analytics} />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ——— the graph ——— */}
       <section className="relative z-10 border-t border-line bg-bg px-6 py-24 md:px-12">
@@ -460,15 +511,73 @@ export function LandingV2() {
         </div>
       </section>
 
-      <footer className="relative z-10 border-t border-line px-6 py-10 md:px-12">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-xs text-muted-2 md:flex-row">
-          <span className="text-center md:text-left">
-            BuildaMod · experimental landing · 3D model &quot;CarConcept&quot; by
-            Eric Chadwick / Khronos Group, CC BY 4.0
-          </span>
-          <Link href="/" className="transition-colors hover:text-ink">
-            Back to the classic landing →
-          </Link>
+      {/* ——— seed a new branch ——— */}
+      <section className="relative z-10 border-t border-line px-6 py-24 md:px-12">
+        <div className="relative mx-auto max-w-4xl overflow-hidden border border-line bg-surface p-10 text-center md:p-16">
+          <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 bg-accent opacity-[0.18] blur-[110px]" />
+          <div className="pointer-events-none absolute -bottom-16 -left-10 h-56 w-56 bg-accent-blue opacity-[0.18] blur-[110px]" />
+          <h2 className="heading-font relative text-4xl font-extrabold leading-[0.95] tracking-tighter md:text-5xl">
+            CAN&apos;T FIND YOUR CAR?
+          </h2>
+          <p className="relative mx-auto mt-5 max-w-lg text-[15px] leading-relaxed text-muted">
+            Every graph starts empty. Plant the root node for any generation and
+            the community grows the branches from there.
+          </p>
+          <button
+            type="button"
+            onClick={jumpToSearch}
+            className="heading-font relative mt-9 bg-primary px-9 py-4 text-sm font-bold uppercase tracking-wider text-primary-fg transition-transform hover:scale-[1.03] active:scale-100"
+          >
+            Seed a new branch
+          </button>
+        </div>
+      </section>
+
+      <footer className="relative z-10 border-t border-line px-6 pb-10 pt-14 md:px-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center bg-accent">
+                <GitBranch size={15} className="text-white" />
+              </div>
+              <span className="heading-font text-lg font-bold tracking-tighter">
+                BuildaMod
+              </span>
+            </Link>
+
+            <nav className="flex flex-wrap justify-center gap-7 text-sm text-muted-2">
+              <Link href="/ecosystem" className="transition-colors hover:text-ink">
+                Ecosystem
+              </Link>
+              <Link href="/blueprints/engine" className="transition-colors hover:text-ink">
+                Engine Analysis
+              </Link>
+              <a href="#featured" className="transition-colors hover:text-ink">
+                Showcase
+              </a>
+              <Link href="/" className="transition-colors hover:text-ink">
+                Classic landing
+              </Link>
+            </nav>
+
+            <div className="flex gap-5 text-muted-2">
+              {/* Placeholders on the original landing too — no accounts exist
+                  to link to yet, so these stay inert rather than 404. */}
+              <FaInstagram size={18} aria-label="Instagram" />
+              <FaXTwitter size={18} aria-label="X" />
+              <FaDiscord size={18} aria-label="Discord" />
+            </div>
+          </div>
+
+          <div className="mt-12 space-y-2 text-center">
+            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-muted-2">
+              © 2026 BuildaMod · SummerHacks project
+            </p>
+            <p className="text-[10px] tracking-wide text-muted-2">
+              3D model &quot;CarConcept&quot; by Eric Chadwick / Khronos Group ·
+              CC BY 4.0
+            </p>
+          </div>
         </div>
       </footer>
 

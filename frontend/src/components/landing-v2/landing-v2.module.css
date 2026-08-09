@@ -140,6 +140,23 @@
   transform: translateY(0);
 }
 
+/* ——— featured cards ——— */
+
+.card {
+  transition: border-color 260ms ease, transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-4px);
+}
+.cardImg {
+  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1), filter 700ms ease;
+}
+.card:hover .cardImg {
+  transform: scale(1.05);
+  filter: grayscale(0);
+}
+
 .searchField:focus-within {
   border-color: rgb(255 60 60 / 0.45);
   box-shadow: 0 0 44px rgb(255 60 60 / 0.14);
@@ -192,6 +209,10 @@
   .dagPath {
     transition: none;
     stroke-dashoffset: 0;
+  }
+  .card,
+  .cardImg {
+    transition: none;
   }
   .scrollCue,
   .livePip,
