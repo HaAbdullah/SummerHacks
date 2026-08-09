@@ -81,12 +81,42 @@ Expect 3 cars, 41 nodes, 93 posts, 15 replies, 70 parts.
 
 ## 3. Deploy
 
+### Render (recommended)
+
+Render runs a real long-lived server, which suits this backend better than serverless:
+**writes work**, uploads are not capped at ~4.5MB, and there is no function timeout on
+the vision path. `render.yaml` at the repo root configures everything.
+
+1. [dashboard.render.com](https://dashboard.render.com) → **New +** → **Blueprint**
+2. Connect the repo → Render reads `render.yaml` → **Apply**
+3. Fill in the secrets it prompts for (marked `sync: false`, so they are never in the
+   repo): `AI_API_KEY`, `CORS_ORIGINS`, plus the two Supabase values if you have them
+4. First build takes ~3 minutes
+
+If Blueprint is not offered, use **New + → Web Service** and set it manually:
+
+| Field | Value |
+|---|---|
+| Root Directory | `backend` |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| Health Check Path | `/api/health` |
+
+> **The free plan sleeps after 15 minutes idle and takes 30–60s to wake.** A judge
+> clicking a cold link and watching a blank page for a minute is the most likely way this
+> demo fails. Either take the paid plan for the weekend, or point a free cron
+> (cron-job.org) at `https://your-app.onrender.com/api/health` every 10 minutes.
+
+### Vercel (alternative)
+
 ```bash
 cd backend
 vercel
 ```
 
-Then add the same four variables in Vercel → Project → Settings → Environment Variables:
+Serverless, so **writes require Supabase** — the filesystem is read-only and the local
+JSON store cannot persist. Uploads must use the signed-URL path. Add these in Vercel →
+Project → Settings → Environment Variables:
 
 | Variable | Value |
 |---|---|

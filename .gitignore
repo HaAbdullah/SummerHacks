@@ -20,6 +20,7 @@ frontend/.env
 frontend/.env.local
 !.env.example
 !**/.env.example
+deploy-env-vars.txt
 
 # Next.js
 frontend/.next/
