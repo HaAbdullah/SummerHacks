@@ -8,12 +8,14 @@ import type {
   AttributeGroup,
   Car,
   CarParts,
+  ChatMessage,
   EcosystemAnalytics,
   Graph,
   Mods,
   Note,
   NodeDetail,
   NoteReply,
+  PromptSuggestion,
   Stats,
   VehicleSearchResponse,
 } from "../types";
@@ -193,4 +195,39 @@ export async function createReply(
     method: "POST",
     body: JSON.stringify({ body, author }),
   });
+}
+
+// --- AI chatbox (node-level) ----------------------------------------------
+
+/** Prior turns sent back for conversation context — the server keeps no session. */
+export interface ChatTurn {
+  role: "user" | "ai";
+  body: string;
+}
+
+/**
+ * Ask the node AI chatbox a question. Grounded server-side in this node's mod
+ * info + community notes (see `GET /ai/build-mod/:nodeId`). Returns the new
+ * [userMessage, aiMessage] pair to append to the thread.
+ */
+export async function askAiChat(
+  nodeId: string,
+  question: string,
+  author = "You",
+  history: ChatTurn[] = [],
+): Promise<ChatMessage[]> {
+  return apiFetch(`/nodes/${encodeURIComponent(nodeId)}/chat`, {
+    method: "POST",
+    body: JSON.stringify({ question, author, history }),
+  });
+}
+
+/** Auto-generated conversation starters for a node's AI chatbox. */
+export async function getChatSuggestions(
+  nodeId: string,
+): Promise<PromptSuggestion[]> {
+  const res = await apiFetch<{ nodeId: string; suggestions: PromptSuggestion[] }>(
+    `/nodes/${encodeURIComponent(nodeId)}/chat/suggestions`,
+  );
+  return res.suggestions;
 }

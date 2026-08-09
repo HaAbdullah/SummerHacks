@@ -45,6 +45,13 @@ export interface ChatMessage {
   role?: "user" | "ai" | "community";
 }
 
+/** An auto-generated conversation starter for a node's AI chatbox, grounded in its
+ *  own community notes where there are any. */
+export interface PromptSuggestion {
+  id: string;
+  prompt: string;
+}
+
 /** The four mod slots. Empty string means stock / unspecified in that slot. */
 export interface Mods {
   engine: string;
