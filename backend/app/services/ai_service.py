@@ -22,20 +22,12 @@ from app.repositories import store
 from app.services import community_service, parts, placement
 
 
-def compare(from_id: str, to_id: str) -> CompareResponse | None:
-    """getCompareNode. Per-slot diff across the four mods."""
-    a = store.get("nodes", from_id)
-    b = store.get("nodes", to_id)
-    if a is None or b is None:
-        return None
-
-    a_mods = Mods(**(a.get("mods") or {}))
-    b_mods = Mods(**(b.get("mods") or {}))
-
+def diff_mods(a: Mods, b: Mods) -> list[ModChange]:
+    """Per-slot diff. Always four entries, one per slot, in layer order."""
     changes: list[ModChange] = []
     for slot in MOD_SLOTS:
-        before = getattr(a_mods, slot).strip()
-        after = getattr(b_mods, slot).strip()
+        before = getattr(a, slot).strip()
+        after = getattr(b, slot).strip()
 
         if before == after:
             status = "unchanged"
@@ -47,7 +39,17 @@ def compare(from_id: str, to_id: str) -> CompareResponse | None:
             status = "modified"
 
         changes.append(ModChange(slot=slot, status=status, before=before, after=after))
+    return changes
 
+
+def compare(from_id: str, to_id: str) -> CompareResponse | None:
+    """getCompareNode. Diff two builds that both exist in the graph."""
+    a = store.get("nodes", from_id)
+    b = store.get("nodes", to_id)
+    if a is None or b is None:
+        return None
+
+    changes = diff_mods(Mods(**(a.get("mods") or {})), Mods(**(b.get("mods") or {})))
     nodes = store.find("nodes", carId=a["carId"])
 
     return CompareResponse(
@@ -59,6 +61,44 @@ def compare(from_id: str, to_id: str) -> CompareResponse | None:
         changes=changes,
         changedCount=sum(1 for c in changes if c.status != "unchanged"),
         commonAncestorId=placement.common_ancestor(from_id, to_id, nodes),
+    )
+
+
+def compare_draft(
+    from_id: str | None, draft: Mods, title: str = "Your build"
+) -> CompareResponse | None:
+    """Diff a build that is not in the graph yet — the vision-extraction path.
+
+    A photo becomes a build JSON before anything is saved, so there is no node id to
+    compare against. This takes the extracted mods directly and diffs them against an
+    existing node, or against stock when `from_id` is None.
+    """
+    if from_id is None:
+        return CompareResponse(
+            carId="",
+            fromNodeId="",
+            toNodeId="",
+            fromTitle="Stock",
+            toTitle=title,
+            changes=diff_mods(Mods(), draft),
+            changedCount=draft.count(),
+            commonAncestorId=None,
+        )
+
+    a = store.get("nodes", from_id)
+    if a is None:
+        return None
+
+    changes = diff_mods(Mods(**(a.get("mods") or {})), draft)
+    return CompareResponse(
+        carId=a["carId"],
+        fromNodeId=from_id,
+        toNodeId="",  # not saved yet
+        fromTitle=a["title"],
+        toTitle=title,
+        changes=changes,
+        changedCount=sum(1 for c in changes if c.status != "unchanged"),
+        commonAncestorId=from_id,
     )
 
 

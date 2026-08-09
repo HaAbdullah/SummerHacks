@@ -35,7 +35,12 @@ create table if not exists nodes (
   id           text primary key,
   car_id       text not null references cars(id) on delete cascade,
   title        text not null,
-  parent_ids   text[] not null default '{}', -- 0 = root, 1 = fork, 2 = merge
+  -- 0 entries = root, 1 = fork, 2 = merge.
+  -- Note: foreign keys cannot be enforced inside an array, so Postgres will NOT stop a
+  -- node pointing at a parent that no longer exists. Nothing deletes nodes today, so
+  -- this is theoretical — but if node deletion is ever added, either clean up children
+  -- in the same transaction or move edges to a node_parents(child_id, parent_id) table.
+  parent_ids   text[] not null default '{}',
   attributes   text[] not null default '{}', -- derived from mods; drives the filter panel
   mods         jsonb  not null default '{"engine":"","exhaust":"","wheels":"","brakes":""}',
   summary      text   not null default '',
@@ -98,6 +103,31 @@ create table if not exists replies (
 );
 
 create index if not exists replies_post_idx on replies (post_id, created_at);
+
+-- --------------------------------------------------------------------------- parts
+
+-- Real parts with real prices, so a generated build guide can quote a catalogue instead
+-- of inventing part numbers. Grouped by the same four mod slots as everything else.
+--
+-- `car_id` deliberately has NO foreign key to cars. This is reference data keyed by
+-- generation slug, and it exists whether or not anyone has opened that generation's
+-- graph yet — a row in `cars` only appears on first visit. Adding the FK would mean
+-- parts could not be loaded until someone browsed the car.
+create table if not exists parts (
+  id         text primary key,
+  car_id     text not null,             -- generation slug, e.g. "toyota-corolla-e170"
+  slot       text not null check (slot in ('engine','exhaust','wheels','brakes')),
+  name       text not null,
+  brand      text,
+  category   text,                       -- timing · crankshaft · oil · pads · muffler …
+  price      numeric(10,2),
+  currency   text not null default 'USD',
+  source_url text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists parts_car_slot_idx on parts (car_id, slot);
+create index if not exists parts_category_idx on parts (car_id, category);
 
 -- --------------------------------------------------------------------------- stats
 

@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 MOD_SLOTS = ("engine", "exhaust", "wheels", "brakes")
 
@@ -57,6 +57,12 @@ class Reply(BaseModel):
     avatarColor: str = "#d5001c"
     body: str
     createdAt: str
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def noteId(self) -> str:
+        """Alias of postId — the frontend calls a community post a "note"."""
+        return self.postId
 
 
 class CommunityPost(BaseModel):
@@ -211,7 +217,8 @@ class Stats(BaseModel):
     builds: int              # node count, root included
     mods: int                # filled mod slots across every node
     contributors: int        # distinct people across nodes, posts and replies
-    active24h: int           # distinct people who did anything in the last 24h
+    active24h: int           # distinct PEOPLE who did anything in the last 24h
+    contributions24h: int    # distinct ACTIONS in the last 24h — not the same number
     posts: int
     replies: int
     merges: int              # nodes with more than one parent
@@ -219,6 +226,12 @@ class Stats(BaseModel):
     postsByKind: dict[str, int]
     deepestChain: int
     hottestNodeId: str = ""
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def totalNodes(self) -> int:
+        """Alias of builds — what the frontend's pulse strip reads."""
+        return self.builds
 
 
 # --- ecosystem analytics (dashboard) -----------------------------------------------
@@ -305,6 +318,19 @@ class CompareResponse(BaseModel):
     changedCount: int
     commonAncestorId: str | None = None
     explanation: str | None = None
+
+
+class CompareDraftRequest(BaseModel):
+    """Compare a build that is not saved yet — the vision-extraction path.
+
+    A photo becomes a build JSON before any node exists, so there is no id to pass to
+    GET /ai/compare. Send the extracted mods here instead.
+    """
+
+    mods: Mods
+    # Omit to diff against stock, which is what a first upload wants.
+    fromNodeId: str | None = None
+    title: str = "Your build"
 
 
 class BuildModPayload(BaseModel):

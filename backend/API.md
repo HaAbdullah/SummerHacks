@@ -105,6 +105,7 @@ tag traces back to one slot (`engine-turbo`, `brakes-bbk`, `wheels-allterrain`).
 | GET | `/cars/{carId}/graph` | **getDAG** by generation id — creates on first visit |
 | GET | `/graph?make=&model=&generation=&year=` | getDAG by name |
 | GET | `/cars/{carId}/generations` | Sibling generations — a "wrong year?" switcher |
+| GET | `/cars/{carId}/parts` | Real parts with prices, from the `parts` table |
 | GET | `/cars` | All cars that have a graph |
 | GET | `/cars/{carId}` | One car |
 | GET | `/cars/{carId}/stats` | **getStats** — real counts |
@@ -366,6 +367,38 @@ an unused tag would empty the graph, so those are dropped.
 ```
 
 ---
+
+## GET `/cars/toyota-corolla-e170/parts`
+
+Real parts with real prices, stored in the `parts` table. Grouped by mod slot:
+
+```json
+{
+  "carId": "toyota-corolla-e170",
+  "slots": {
+    "engine": [
+      {
+        "id": "toyota-corolla-e170-engine-beck-arnley-vvt-solenoid-024-1950",
+        "carId": "toyota-corolla-e170",
+        "slot": "engine",
+        "name": "Beck/Arnley VVT Solenoid 024-1950",
+        "brand": "Beck/Arnley",
+        "category": "timing",
+        "price": 83.41,
+        "currency": "USD",
+        "sourceUrl": null
+      }
+    ]
+  }
+}
+```
+
+`?slot=engine` narrows to one slot. `?slot=engine&grouped=true` breaks it down by
+sub-category — `timing`, `crankshaft`, `oil`, `cooling`, `pads`, `muffler`, `hardware`,
+`spacers`, `tpms` — which is how a build guide reads best.
+
+Edit `data/parts.json` and run `python scripts/seed_parts.py` to reload. Ids are derived
+from the name, so reseeding updates a part instead of duplicating it.
 
 # For Ahmed
 

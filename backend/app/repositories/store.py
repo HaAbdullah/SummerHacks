@@ -5,7 +5,7 @@ Postgres later changes no service and no route.
 
 Everything lives in one document under `data/db.json`:
 
-    { "cars": {...}, "nodes": {...}, "posts": {...}, "replies": {...} }
+    { "cars": {...}, "nodes": {...}, "posts": {...}, "replies": {...}, "parts": {...} }
 
 Writes are atomic (temp file + replace) so an interrupted save cannot leave a truncated
 database behind — which on a demo day matters more than write speed.
@@ -25,7 +25,9 @@ DB_PATH = DATA_DIR / "db.json"
 _lock = threading.Lock()
 _db: dict[str, dict[str, Any]] | None = None
 
-EMPTY: dict[str, dict[str, Any]] = {"cars": {}, "nodes": {}, "posts": {}, "replies": {}}
+EMPTY: dict[str, dict[str, Any]] = {
+    "cars": {}, "nodes": {}, "posts": {}, "replies": {}, "parts": {},
+}
 
 
 def _load() -> dict[str, dict[str, Any]]:
@@ -64,6 +66,15 @@ def put(collection: str, item_id: str, value: dict) -> dict:
         _load()[collection][item_id] = value
         _flush()
     return value
+
+
+def delete(collection: str, item_id: str) -> bool:
+    """Remove one item. Returns False if it was not there."""
+    with _lock:
+        existed = _load()[collection].pop(item_id, None) is not None
+        if existed:
+            _flush()
+    return existed
 
 
 def find(collection: str, **match: Any) -> list[dict]:

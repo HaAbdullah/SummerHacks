@@ -12,6 +12,7 @@ from app.models.schemas import (
     BuildModPayload,
     Car,
     CommunityPost,
+    CompareDraftRequest,
     CompareResponse,
     CreateNodeRequest,
     CreatePostRequest,
@@ -111,9 +112,23 @@ def get_generations(car_id: str) -> list[dict]:
     return generations.for_model(make, model)
 
 
-@router.get("/cars/{car_id}/parts", tags=["graph"])
-def get_parts(car_id: str) -> dict:
-    """Curated parts with prices for a generation, grouped by mod slot."""
+@router.get("/cars/{car_id}/parts", tags=["parts"])
+def get_parts(
+    car_id: str,
+    slot: str | None = Query(None, description="engine | exhaust | wheels | brakes"),
+    grouped: bool = Query(False, description="Group by sub-category within the slot"),
+) -> dict:
+    """Real parts with prices for a generation, from the parts table.
+
+    Without `slot`, returns everything grouped by mod slot. With `slot`, returns that
+    slot only — add `grouped=true` to break it down by sub-category (timing, crankshaft,
+    oil, pads, muffler), which is how a build guide reads best.
+    """
+    if slot:
+        if slot not in ("engine", "exhaust", "wheels", "brakes"):
+            raise HTTPException(400, f"'{slot}' is not a mod slot")
+        payload = parts.by_category(car_id, slot) if grouped else parts.for_slot(car_id, slot)
+        return {"carId": car_id, "slot": slot, "parts": payload}
     return {"carId": car_id, "slots": parts.for_car(car_id)}
 
 
@@ -296,6 +311,19 @@ def get_build_mod(node_id: str) -> BuildModPayload:
     if payload is None:
         raise HTTPException(404, f"No node '{node_id}'")
     return payload
+
+
+@router.post("/ai/compare", response_model=CompareResponse, tags=["ai"])
+def compare_draft(req: CompareDraftRequest) -> CompareResponse:
+    """Diff an unsaved build — what the vision model just extracted from a photo.
+
+    Same response shape as the GET, so one renderer handles both. `toNodeId` is empty
+    because the build does not exist yet. Omit `fromNodeId` to diff against stock.
+    """
+    result = ai_service.compare_draft(req.fromNodeId, req.mods, req.title)
+    if result is None:
+        raise HTTPException(404, f"No node '{req.fromNodeId}'")
+    return result
 
 
 @router.get("/ai/compare", response_model=CompareResponse, tags=["ai"])

@@ -258,8 +258,11 @@ def get_stats(car_id: str) -> Stats | None:
         | {r["author"] for r in replies}
     )
 
+    # Two different 24h numbers, both wanted: how many PEOPLE showed up, and how many
+    # THINGS happened. A single person posting five times is 1 and 5.
     cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
     recent: set[str] = set()
+    recent_actions = 0
     for record, who in (
         *((n, n["createdBy"]) for n in nodes),
         *((p, p["author"]) for p in posts),
@@ -267,6 +270,7 @@ def get_stats(car_id: str) -> Stats | None:
     ):
         if _parse(record["createdAt"]) >= cutoff:
             recent.add(who)
+            recent_actions += 1
 
     hottest = max(nodes, key=lambda n: n["stats"].get("heat", 0), default=None)
 
@@ -276,6 +280,7 @@ def get_stats(car_id: str) -> Stats | None:
         mods=sum(mods_by_slot.values()),
         contributors=len(people),
         active24h=len(recent),
+        contributions24h=recent_actions,
         posts=len(posts),
         replies=len(replies),
         merges=sum(1 for n in nodes if len(n.get("parentIds", [])) > 1),
