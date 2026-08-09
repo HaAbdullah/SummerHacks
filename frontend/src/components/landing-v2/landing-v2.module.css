@@ -1,0 +1,223 @@
+/* Effects for the /landing-v2 experiment that Tailwind utilities can't express
+   cleanly — scroll-reveal choreography, the self-drawing DAG, and the vignette
+   that keeps white copy legible over a lit 3D car. */
+
+.stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* No interactive elements live inside a stage panel, and only one is visible
+     at a time — letting clicks through keeps the six stacked panels from
+     swallowing anything behind them. */
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 620ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stageActive {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Keeps the copy readable over whatever the car and the rim light are doing
+   underneath it, without dimming the whole canvas. */
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, rgb(5 5 5 / 0.94) 0%, rgb(5 5 5 / 0.6) 36%, rgb(5 5 5 / 0) 64%),
+    linear-gradient(to top, rgb(5 5 5 / 0.9) 0%, rgb(5 5 5 / 0) 34%),
+    radial-gradient(ellipse at 66% 45%, rgb(5 5 5 / 0) 38%, rgb(5 5 5 / 0.62) 100%);
+}
+
+.scrollCue {
+  animation: cueDrift 2.4s ease-in-out infinite;
+}
+
+@keyframes cueDrift {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.livePip {
+  animation: pipPulse 2s ease-in-out infinite;
+}
+
+@keyframes pipPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    box-shadow: 0 0 0 0 rgb(255 60 60 / 0.5);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 0 4px rgb(255 60 60 / 0);
+  }
+}
+
+/* ——— self-drawing branch diagram ——— */
+
+.dag {
+  width: 100%;
+  height: auto;
+}
+
+.dagPath {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 620;
+  stroke-dashoffset: 620;
+  transition: stroke-dashoffset 1100ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.dagNode,
+.dagLabel {
+  opacity: 0;
+  transition:
+    opacity 480ms ease,
+    transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.4);
+}
+
+.dagLabel {
+  transform: none;
+}
+
+.revealed .dagPath {
+  stroke-dashoffset: 0;
+}
+
+.revealed .dagNode {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.revealed .dagLabel {
+  opacity: 1;
+  transition-delay: 1500ms;
+}
+
+/* Stagger left-to-right so the graph reads as growing, not appearing. */
+.revealed .dagPath:nth-of-type(1) { transition-delay: 60ms; }
+.revealed .dagPath:nth-of-type(2) { transition-delay: 320ms; }
+.revealed .dagPath:nth-of-type(3) { transition-delay: 420ms; }
+.revealed .dagPath:nth-of-type(4) { transition-delay: 720ms; }
+.revealed .dagPath:nth-of-type(5) { transition-delay: 980ms; }
+.revealed .dagPath:nth-of-type(6) { transition-delay: 1080ms; }
+
+.revealed .dagNode:nth-of-type(1) { transition-delay: 40ms; }
+.revealed .dagNode:nth-of-type(2) { transition-delay: 300ms; }
+.revealed .dagNode:nth-of-type(3) { transition-delay: 620ms; }
+.revealed .dagNode:nth-of-type(4) { transition-delay: 700ms; }
+.revealed .dagNode:nth-of-type(5) { transition-delay: 1020ms; }
+.revealed .dagNode:nth-of-type(6) { transition-delay: 1400ms; }
+
+/* ——— generic scroll reveal for the sections below the 3D block ——— */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.revealShown {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ——— featured cards ——— */
+
+.card {
+  transition: border-color 260ms ease, transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-4px);
+}
+.cardImg {
+  transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1), filter 700ms ease;
+}
+.card:hover .cardImg {
+  transform: scale(1.05);
+  filter: grayscale(0);
+}
+
+.searchField:focus-within {
+  border-color: rgb(255 60 60 / 0.45);
+  box-shadow: 0 0 44px rgb(255 60 60 / 0.14);
+}
+
+/* ——— auth dialog ——— */
+
+.modalBackdrop {
+  background: rgb(5 5 5 / 0.72);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 200ms ease both;
+}
+
+.modalCard {
+  box-shadow: 0 30px 90px -20px rgb(0 0 0 / 0.8);
+  animation: cardIn 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Note: `.stage` keeps its opacity driven by `.stageActive` — forcing it to 1
+     here would stack all six absolutely-positioned panels on top of each
+     other. Only the motion is removed. */
+  .stage {
+    transition: none;
+    transform: none;
+  }
+  .reveal,
+  .dagNode,
+  .dagLabel {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+  .dagPath {
+    transition: none;
+    stroke-dashoffset: 0;
+  }
+  .card,
+  .cardImg {
+    transition: none;
+  }
+  .scrollCue,
+  .livePip,
+  .modalBackdrop,
+  .modalCard {
+    animation: none;
+  }
+}
