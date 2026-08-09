@@ -22,6 +22,9 @@
 .stageActive {
   opacity: 1;
   transform: translateY(0);
+  /* The hero stage carries the search field, so the visible panel has to take
+     clicks. The five inactive ones stay click-through. */
+  pointer-events: auto;
 }
 
 /* Keeps the copy readable over whatever the car and the rim light are doing

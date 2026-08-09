@@ -23,8 +23,9 @@ export interface Stage {
   eyebrow: string;
   title: string;
   blurb: string;
-  /** Spec-sheet rows. Real part vocabulary for the four slots the graph stores. */
-  specs: Spec[];
+  /** Spec-sheet rows. Real part vocabulary for the four slots the graph stores.
+   *  Omitted on the hero stage, which carries the search field instead. */
+  specs?: Spec[];
   /** Drives both the copy accent and the moving rim light in the 3D scene. */
   accent: string;
   /** Camera placement in spherical coords around the car, interpolated per
@@ -45,11 +46,6 @@ export const STAGES: Stage[] = [
     title: "EVERY MOD\nIS A COMMIT",
     blurb:
       "Fork someone's car. Change one thing. Push it back. The community's entire build history sits in one graph you can walk, branch by branch.",
-    specs: [
-      { k: "State", v: "Factory spec" },
-      { k: "Slots filled", v: "0 of 4" },
-      { k: "Role", v: "Root node" },
-    ],
     accent: "#ffffff",
     azimuth: 0.85,
     elevation: 0.3,

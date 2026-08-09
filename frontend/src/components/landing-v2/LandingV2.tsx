@@ -104,9 +104,11 @@ export function LandingV2() {
     };
   }, []);
 
+  /** Same behaviour as the original landing page's "seed a new branch": go back
+   *  to the top and put the cursor in the search field. */
   const jumpToSearch = () => {
-    document.getElementById("start")?.scrollIntoView({ behavior: "smooth" });
-    window.setTimeout(() => heroSearchRef.current?.focus(), 700);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.setTimeout(() => heroSearchRef.current?.focus(), 650);
   };
 
   return (
@@ -185,7 +187,9 @@ export function LandingV2() {
         className="relative z-10"
         style={{ height: `${STAGES.length * 100}vh` }}
       >
-        <div className="sticky top-0 h-screen w-full overflow-hidden">
+        {/* No overflow clipping: the hero search dropdown has to escape this
+            box. Nothing else here overflows — the canvas is inset-0. */}
+        <div className="sticky top-0 h-screen w-full">
           <div className="absolute inset-0">
             {sceneOn ? (
               <ScrollCarScene />
@@ -199,7 +203,7 @@ export function LandingV2() {
           {/* stage copy — all six mounted, cross-faded by `active` */}
           {/* pb-14 clears the telemetry strip pinned to the bottom edge */}
           <div className="relative mx-auto flex h-full max-w-7xl items-center px-6 pb-14 md:px-12">
-            <div className="relative h-[520px] w-full max-w-lg">
+            <div className="relative h-[540px] w-full max-w-xl">
               {STAGES.map((stage, i) => (
                 <article
                   key={stage.key}
@@ -227,19 +231,42 @@ export function LandingV2() {
                     {stage.blurb}
                   </p>
 
-                  <dl className="mt-9 max-w-sm">
-                    {stage.specs.map((spec) => (
-                      <div
-                        key={spec.k}
-                        className="flex items-baseline justify-between gap-4 border-t border-line py-2.5 last:border-b"
-                      >
-                        <dt className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-2">
-                          {spec.k}
-                        </dt>
-                        <dd className="text-sm text-ink-soft">{spec.v}</dd>
+                  {stage.specs ? (
+                    <dl className="mt-9 max-w-sm">
+                      {stage.specs.map((spec) => (
+                        <div
+                          key={spec.k}
+                          className="flex items-baseline justify-between gap-4 border-t border-line py-2.5 last:border-b"
+                        >
+                          <dt className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-2">
+                            {spec.k}
+                          </dt>
+                          <dd className="text-sm text-ink-soft">{spec.v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : (
+                    // The hero: searching for your car is the one thing this
+                    // page exists to start, so it sits above the fold.
+                    <div className="mt-9">
+                      <CarSearch variant="hero" autoFocusRef={heroSearchRef} />
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <span className="mr-1 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-2">
+                          Seeded
+                        </span>
+                        {SEEDED.map((car) => (
+                          <Link
+                            key={car.id}
+                            href={`/garage/${car.id}`}
+                            className="border border-line bg-black/30 px-2.5 py-1 text-xs text-ink-soft backdrop-blur-sm transition-colors hover:border-line-strong hover:bg-black/50"
+                          >
+                            {car.label}{" "}
+                            <span className="text-muted-2">{car.gen}</span>
+                          </Link>
+                        ))}
                       </div>
-                    ))}
-                  </dl>
+                    </div>
+                  )}
                 </article>
               ))}
             </div>
@@ -427,8 +454,11 @@ export function LandingV2() {
             parts list and its own history.
           </p>
 
+          {/* Deliberately no `autoFocusRef` — that ref belongs to the hero
+              field, and pointing it at two inputs would leave it holding
+              whichever mounted last. */}
           <div className="mt-10">
-            <CarSearch variant="hero" autoFocusRef={heroSearchRef} />
+            <CarSearch variant="hero" />
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-2">
