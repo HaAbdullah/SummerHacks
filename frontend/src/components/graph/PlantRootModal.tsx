@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { X, Sprout, ImagePlus, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { backdropVariants, modalPanelVariants } from "@/lib/motion";
 import { createBranch } from "@/lib/api";
 import type { Car, Mods } from "@/lib/types";
 
@@ -84,13 +86,18 @@ export function PlantRootModal({
   };
 
   return (
-    <div
+    <motion.div
+      variants={backdropVariants}
+      initial="hidden"
+      animate="show"
+      exit="exit"
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div
-        className="floating-modal max-h-[min(90vh,760px)] w-full max-w-[440px] overflow-y-auto rounded-[24px] p-6"
+      <motion.div
+        variants={modalPanelVariants}
         onClick={(e) => e.stopPropagation()}
+        className="floating-modal max-h-[min(90vh,760px)] w-full max-w-[440px] overflow-y-auto rounded-[24px] p-6"
       >
         <div className="mb-5 flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
@@ -249,7 +256,7 @@ export function PlantRootModal({
             Cancel
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

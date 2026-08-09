@@ -11,7 +11,7 @@ import {
   type NodeMouseHandler,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { createBranch, generateTransitionBuildGuide, getGraph } from "@/lib/api";
 import { compareNodes, toCompareNode } from "@/lib/api/compare";
 import type {
@@ -584,53 +584,55 @@ function CanvasInner({
         </div>
       )}
 
-      {compareResult &&
-        (() => {
-          const base = buildNodes.find(
-            (node) => node.id === compareResult.base_node_id,
-          );
-          const target = buildNodes.find(
-            (node) => node.id === compareResult.target_node_id,
-          );
-          return base && target ? (
-            <CompareResultPanel
-              base={base}
-              target={target}
-              result={compareResult}
-              onClose={() => setCompareResult(null)}
-              onGenerateGuide={() => void runBuildGuide()}
-              guideBusy={guideBusy}
-            />
-          ) : null;
-        })()}
+      <AnimatePresence>
+        {compareResult &&
+          (() => {
+            const base = buildNodes.find(
+              (node) => node.id === compareResult.base_node_id,
+            );
+            const target = buildNodes.find(
+              (node) => node.id === compareResult.target_node_id,
+            );
+            return base && target ? (
+              <CompareResultPanel
+                base={base}
+                target={target}
+                result={compareResult}
+                onClose={() => setCompareResult(null)}
+                onGenerateGuide={() => void runBuildGuide()}
+                guideBusy={guideBusy}
+              />
+            ) : null;
+          })()}
 
-      {buildGuide &&
-        (() => {
-          const base = buildNodes.find(
-            (node) => node.id === buildGuide.node_a_id,
-          );
-          const target = buildNodes.find(
-            (node) => node.id === buildGuide.node_b_id,
-          );
-          return base && target ? (
-            <BuildGuidePanel
-              base={base}
-              target={target}
-              guide={buildGuide}
-              onClose={() => setBuildGuide(null)}
-            />
-          ) : null;
-        })()}
+        {buildGuide &&
+          (() => {
+            const base = buildNodes.find(
+              (node) => node.id === buildGuide.node_a_id,
+            );
+            const target = buildNodes.find(
+              (node) => node.id === buildGuide.node_b_id,
+            );
+            return base && target ? (
+              <BuildGuidePanel
+                base={base}
+                target={target}
+                guide={buildGuide}
+                onClose={() => setBuildGuide(null)}
+              />
+            ) : null;
+          })()}
 
-      {addBranchRequest && (
-        <AddBranchModal
-          parentId={addBranchRequest.parentId}
-          presetAttributes={addBranchRequest.presetAttributes}
-          nodes={buildNodes}
-          onClose={closeAddBranchModal}
-          onCreated={onCreatedFork}
-        />
-      )}
+        {addBranchRequest && (
+          <AddBranchModal
+            parentId={addBranchRequest.parentId}
+            presetAttributes={addBranchRequest.presetAttributes}
+            nodes={buildNodes}
+            onClose={closeAddBranchModal}
+            onCreated={onCreatedFork}
+          />
+        )}
+      </AnimatePresence>
 
       <ReactFlow
         nodes={nodes}

@@ -4,6 +4,8 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, GitBranch, Car as CarIcon } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { dropdownVariants, sheetVariants } from "@/lib/motion";
 import { getAttributeGroups, getCar, getGraph } from "@/lib/api";
 import type { AttributeGroup, BuildNodeData, Car } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
@@ -141,21 +143,27 @@ export default function GaragePage({
         )}
       </main>
 
-      {plantOpen && (
-        <PlantRootModal
-          carId={carId}
-          car={car}
-          onClose={() => setPlantOpen(false)}
-          onCreated={() => {
-            setPlantOpen(false);
-            void load();
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {plantOpen && (
+          <PlantRootModal
+            carId={carId}
+            car={car}
+            onClose={() => setPlantOpen(false)}
+            onCreated={() => {
+              setPlantOpen(false);
+              void load();
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Floating left panel — a modal-like card resting on the dotted canvas. */}
       {!loading && !empty && !loadError && (
-        <aside className="floating-modal absolute bottom-8 left-8 top-8 z-40 flex w-[23vw] min-w-[380px] max-w-[500px] flex-col overflow-hidden rounded-[32px]">
+        <motion.aside
+          variants={sheetVariants}
+          initial="hidden"
+          animate="show"
+          className="floating-modal absolute bottom-8 left-8 top-8 z-40 flex w-[23vw] min-w-[380px] max-w-[500px] flex-col overflow-hidden rounded-[32px]">
           <div className="border-b border-line p-6">
             <div className="mb-6 flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
@@ -212,34 +220,42 @@ export default function GaragePage({
                   />
                 </button>
 
-                {projectMenuOpen && (
-                  <div className="floating-modal absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl">
-                    <p className="px-4 pb-2 pt-3 text-[9px] font-bold uppercase tracking-widest text-muted">
-                      Jump into a branch
-                    </p>
-                    <div className="divide-y divide-line">
-                      {rootChildren.map((b) => {
-                        const active = focusedBranchId === b.id;
-                        return (
-                          <button
-                            key={b.id}
-                            type="button"
-                            onClick={() => {
-                              setFocusedBranchId(b.id);
-                              setProjectMenuOpen(false);
-                            }}
-                            className={`focus-ring flex w-full items-center justify-between px-4 py-3 text-left text-[12px] font-semibold transition-colors hover:bg-white/5 ${
-                              active ? "text-accent" : "text-ink-soft"
-                            }`}
-                          >
-                            {b.title}
-                            {active && <span className="text-[10px]">● shown</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                <AnimatePresence>
+                  {projectMenuOpen && (
+                    <motion.div
+                      variants={dropdownVariants}
+                      initial="hidden"
+                      animate="show"
+                      exit="exit"
+                      className="floating-modal absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl"
+                    >
+                      <p className="px-4 pb-2 pt-3 text-[9px] font-bold uppercase tracking-widest text-muted">
+                        Jump into a branch
+                      </p>
+                      <div className="divide-y divide-line">
+                        {rootChildren.map((b) => {
+                          const active = focusedBranchId === b.id;
+                          return (
+                            <button
+                              key={b.id}
+                              type="button"
+                              onClick={() => {
+                                setFocusedBranchId(b.id);
+                                setProjectMenuOpen(false);
+                              }}
+                              className={`focus-ring flex w-full items-center justify-between px-4 py-3 text-left text-[12px] font-semibold transition-colors hover:bg-white/5 ${
+                                active ? "text-accent" : "text-ink-soft"
+                              }`}
+                            >
+                              {b.title}
+                              {active && <span className="text-[10px]">● shown</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
           </div>
@@ -288,7 +304,7 @@ export default function GaragePage({
               Start New Branch
             </button>
           </div>
-        </aside>
+        </motion.aside>
       )}
     </div>
   );

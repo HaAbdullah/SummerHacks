@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { listItem, scaleIn, staggerContainer } from "@/lib/motion";
 import { askAiChat, generateBuildGuide, getChatSuggestions } from "@/lib/api";
 import type { BuildGuide, BuildNodeData, ChatMessage, PromptSuggestion } from "@/lib/types";
 
@@ -124,23 +126,46 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
       </div>
 
       <div className="scroll-soft flex-1 space-y-2.5 overflow-y-auto px-3 py-3">
-        {aiThread.map((m) => (
-          <div
-            key={m.id}
-            className={`rounded-[var(--radius-sm)] px-2.5 py-2 text-ui leading-relaxed ${
-              m.role === "user"
-                ? "ml-4 bg-bg text-ink"
-                : "mr-1 border border-line bg-bg text-ink-soft"
-            }`}
+        <AnimatePresence initial={false}>
+          {aiThread.map((m) => (
+            <motion.div
+              key={m.id}
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className={`rounded-[var(--radius-sm)] px-2.5 py-2 text-ui leading-relaxed ${
+                m.role === "user"
+                  ? "ml-4 bg-bg text-ink"
+                  : "mr-1 border border-line bg-bg text-ink-soft"
+              }`}
+            >
+              {m.role === "ai" && (
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                  AI
+                </p>
+              )}
+              {m.body}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {busy && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mr-1 flex w-fit items-center gap-1 rounded-[var(--radius-sm)] border border-line bg-bg px-3 py-2.5"
           >
-            {m.role === "ai" && (
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-accent">
-                AI
-              </p>
-            )}
-            {m.body}
-          </div>
-        ))}
+            {[0, 1, 2].map((i) => (
+              <motion.span
+                key={i}
+                className="h-1.5 w-1.5 rounded-full bg-muted"
+                animate={{ opacity: [0.3, 1, 0.3], y: [0, -3, 0] }}
+                transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }}
+              />
+            ))}
+          </motion.div>
+        )}
 
         {aiThread.length === 0 && !guide && (
           <div className="space-y-2.5">
@@ -148,25 +173,36 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
               Ask about parts, cost, or build order.
             </p>
             {suggestions.length > 0 && (
-              <div className="flex flex-col gap-1.5">
+              <motion.div
+                initial="hidden"
+                animate="show"
+                variants={staggerContainer(0.06)}
+                className="flex flex-col gap-1.5"
+              >
                 {suggestions.map((s) => (
-                  <button
+                  <motion.button
                     key={s.id}
+                    variants={listItem}
+                    whileHover={{ x: 3 }}
                     type="button"
                     onClick={() => void ask(s.prompt)}
                     disabled={busy}
                     className="focus-ring rounded-[var(--radius-sm)] border border-line bg-bg px-2.5 py-2 text-left text-ui text-ink-soft transition-colors hover:border-accent/40 hover:bg-accent/5 disabled:opacity-50"
                   >
                     {s.prompt}
-                  </button>
+                  </motion.button>
                 ))}
-              </div>
+              </motion.div>
             )}
           </div>
         )}
 
         {guide && (
-          <div className="rounded-[var(--radius)] border border-line bg-bg p-3">
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={scaleIn}
+            className="rounded-[var(--radius)] border border-line bg-bg p-3">
             <p className="text-[13px] font-semibold tracking-tight text-ink">
               {guide.title}
             </p>
@@ -206,7 +242,7 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
                 className="mt-2.5 w-full rounded-[var(--radius-sm)] border border-line object-cover"
               />
             )}
-          </div>
+          </motion.div>
         )}
         <div ref={endRef} />
       </div>

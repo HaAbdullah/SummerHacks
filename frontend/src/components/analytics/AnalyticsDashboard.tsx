@@ -13,6 +13,8 @@ import {
   Share2,
   Users,
 } from "lucide-react";
+import { motion } from "framer-motion";
+import { fadeUp, staggerContainer, viewportStagger } from "@/lib/motion";
 import { getEcosystemAnalytics } from "@/lib/api";
 import type { EcosystemAnalytics } from "@/lib/types";
 import { StatCard } from "./StatCard";
@@ -62,7 +64,11 @@ export function AnalyticsDashboard() {
         }}
       />
 
-      <header className="sticky top-0 z-50 flex h-20 items-center justify-between border-b border-white/5 bg-black/50 px-8 backdrop-blur-xl">
+      <motion.header
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="sticky top-0 z-50 flex h-20 items-center justify-between border-b border-white/5 bg-black/50 px-8 backdrop-blur-xl">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
@@ -111,7 +117,7 @@ export function AnalyticsDashboard() {
             </span>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       <main className="relative z-10 mx-auto w-full max-w-[1600px] flex-1 space-y-8 p-8">
         {loading ? (
@@ -127,7 +133,12 @@ export function AnalyticsDashboard() {
           </div>
         ) : (
           <>
-            <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <motion.section
+              initial="hidden"
+              animate="show"
+              variants={staggerContainer(0.08)}
+              className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4"
+            >
               <StatCard
                 label="Total Forks"
                 value={data.kpis.totalForks.value}
@@ -162,19 +173,29 @@ export function AnalyticsDashboard() {
                 iconBg="bg-accent-blue/10"
                 glow="blue"
               />
-            </section>
+            </motion.section>
 
-            <section className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            <motion.section
+              {...viewportStagger}
+              variants={fadeUp}
+              className="grid grid-cols-1 gap-8 lg:grid-cols-3"
+            >
               <ActivityChart days={data.activity} />
               <NetworkHealth network={data.network} />
-            </section>
+            </motion.section>
 
-            <section className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <motion.section
+              {...viewportStagger}
+              variants={fadeUp}
+              className="grid grid-cols-1 gap-8 md:grid-cols-2"
+            >
               <TrendingBranches items={data.trending} />
               <TopBuilders builders={data.builders} />
-            </section>
+            </motion.section>
 
-            <AnalyticsCta />
+            <motion.div {...viewportStagger} variants={fadeUp}>
+              <AnalyticsCta />
+            </motion.div>
           </>
         )}
       </main>

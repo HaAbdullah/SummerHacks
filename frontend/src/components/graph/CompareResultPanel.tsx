@@ -1,6 +1,8 @@
 "use client";
 
 import { AlertTriangle, BookOpen, Check, LoaderCircle, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { EASE } from "@/lib/motion";
 import type { BuildNodeData, CompareResult } from "@/lib/types";
 
 const money = new Intl.NumberFormat("en-US", {
@@ -32,7 +34,12 @@ export function CompareResultPanel({
   ];
 
   return (
-    <aside className="floating-modal absolute right-4 top-20 z-40 max-h-[calc(100%-6rem)] w-[390px] overflow-y-auto rounded-[22px] p-5 shadow-2xl">
+    <motion.aside
+      initial={{ opacity: 0, x: 24, scale: 0.97 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 16, scale: 0.98 }}
+      transition={{ duration: 0.3, ease: EASE }}
+      className="floating-modal absolute right-4 top-20 z-40 max-h-[calc(100%-6rem)] w-[390px] overflow-y-auto rounded-[22px] p-5 shadow-2xl">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-accent-blue">
@@ -141,7 +148,7 @@ export function CompareResultPanel({
           {guideBusy ? "Generating guide" : "Generate build guide"}
         </button>
       )}
-    </aside>
+    </motion.aside>
   );
 }
 

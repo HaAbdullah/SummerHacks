@@ -1,6 +1,8 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
+import { listItem } from "@/lib/motion";
 
 export function StatCard({
   label,
@@ -23,7 +25,10 @@ export function StatCard({
   const formatted = value.toLocaleString("en-US");
 
   return (
-    <div
+    <motion.div
+      variants={listItem}
+      whileHover={{ y: -4 }}
+      transition={{ type: "spring", stiffness: 320, damping: 26 }}
       className={`rounded-[24px] border border-white/5 bg-[rgba(18,18,18,0.7)] p-6 backdrop-blur-xl ${
         glow === "red"
           ? "shadow-[0_0_40px_-10px_rgba(255,60,60,0.15)]"
@@ -53,6 +58,6 @@ export function StatCard({
         {label}
       </h3>
       <p className="heading-font mt-1 text-4xl font-bold text-ink">{formatted}</p>
-    </div>
+    </motion.div>
   );
 }

@@ -105,6 +105,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: "cv11", "ss01";
+  overflow-x: hidden;
+}
+
+/* Safe-area padding for notched phones (esp. fixed bottom UI) */
+.safe-pb {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+.safe-pt {
+  padding-top: max(0px, env(safe-area-inset-top, 0px));
+}
+.safe-px {
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
 }
 
 .font-display,
@@ -384,20 +397,21 @@ body {
   border: 1px solid var(--line);
 }
 
-/* canvas board */
+/* canvas board — grey semi-transparent grid for graph + contribution canvases */
 .canvas-grid {
   background-color: var(--bg);
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    rgb(255 255 255 / 0.12) 1.5px,
-    transparent 0
-  );
-  background-size: 24px 24px;
+  background-image:
+    linear-gradient(rgb(128 128 128 / 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(128 128 128 / 0.14) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
 .dot-grid {
-  background-image: radial-gradient(rgb(255 255 255 / 0.12) 1.5px, transparent 0);
-  background-size: 40px 40px;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgb(128 128 128 / 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(128 128 128 / 0.14) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 .floating-modal {
