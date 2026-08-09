@@ -1,0 +1,66 @@
+# Trigger a Render deploy when the backend changes.
+#
+# Render only auto-deploys services connected through its GitHub App. This service was
+# created from a public repo URL, which gives Render no webhook — so this workflow calls
+# Render's deploy hook instead.
+#
+# Setup (once):
+#   1. Render → modbranch-api → Settings → Deploy Hook → copy the URL
+#   2. GitHub → repo → Settings → Secrets and variables → Actions → New repository secret
+#      Name: RENDER_DEPLOY_HOOK      Value: the URL from step 1
+#
+# The hook URL is a credential — anyone holding it can trigger deploys, so it belongs in
+# a secret rather than in this file.
+#
+# If the service is later connected through Render's GitHub App, delete this workflow:
+# Render will auto-deploy on its own and both would fire.
+
+name: Deploy backend to Render
+
+on:
+  push:
+    branches: [main]
+    # Frontend-only commits do not need a backend redeploy.
+    paths:
+      - "backend/**"
+      - "render.yaml"
+      - ".github/workflows/deploy-backend.yml"
+  # Lets you redeploy by hand from the Actions tab without pushing anything.
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "RENDER_DEPLOY_HOOK is not set — add it in repo Settings → Secrets."
+            exit 1
+          fi
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$HOOK")
+          echo "Render responded $code"
+          # Render answers 200 with a JSON body once the deploy is queued.
+          [ "$code" = "200" ] || exit 1
+
+      - name: Wait for the new build, then check health
+        run: |
+          # Render queues, builds and restarts; the old instance keeps serving until the
+          # new one passes its health check, so a 200 too early can be the OLD build.
+          # Two minutes is comfortably past a typical ~90s build.
+          sleep 120
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              https://modbranch-api.onrender.com/api/health)
+            if [ "$code" = "200" ]; then
+              echo "Healthy on attempt $attempt"
+              curl -s https://modbranch-api.onrender.com/api/health
+              exit 0
+            fi
+            echo "attempt $attempt: $code — waiting"
+            sleep 20
+          done
+          echo "Never returned healthy. Check the Render logs."
+          exit 1
