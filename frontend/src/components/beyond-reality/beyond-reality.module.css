@@ -1,0 +1,150 @@
+.page {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  background: var(--bg);
+  color: #fff;
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+}
+
+.scanline {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgb(255 255 255 / 0) 0,
+    rgb(255 255 255 / 0) 50%,
+    rgb(0 0 0 / 0.2) 50%,
+    rgb(0 0 0 / 0.2) 100%
+  );
+  background-size: 100% 4px;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.neonBg {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgb(60 126 255 / 0.1), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.wordmark {
+  font-family: var(--font-syncopate), sans-serif;
+}
+
+.cyberButton {
+  position: relative;
+  background: transparent;
+  border: 1px solid var(--accent-blue);
+  color: var(--accent-blue);
+  transition: all 300ms ease;
+  overflow: hidden;
+}
+.cyberButton:hover {
+  background: var(--accent-blue);
+  color: white;
+  box-shadow: 0 0 20px var(--accent-blue);
+}
+.cyberButton::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 200%;
+  height: 200%;
+  background: rgb(255 255 255 / 0.1);
+  transform: rotate(45deg);
+  transition: all 500ms ease;
+}
+.cyberButton:hover::after {
+  left: 100%;
+}
+
+.glitchWrapper {
+  position: relative;
+}
+.glitchText {
+  position: relative;
+  display: inline-block;
+  animation: glitch 2s infinite linear alternate-reverse;
+}
+.glitchText::before,
+.glitchText::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+.glitchText::before {
+  left: 2px;
+  text-shadow: -2px 0 var(--accent);
+  clip: rect(44px, 450px, 56px, 0);
+  animation: glitchAnim 5s infinite linear alternate-reverse;
+}
+.glitchText::after {
+  left: -2px;
+  text-shadow: -2px 0 var(--accent-blue);
+  clip: rect(44px, 450px, 56px, 0);
+  animation: glitchAnim2 5s infinite linear alternate-reverse;
+}
+@keyframes glitchAnim {
+  0% { clip: rect(31px, 9999px, 94px, 0); }
+  10% { clip: rect(6px, 9999px, 67px, 0); }
+  20% { clip: rect(79px, 9999px, 42px, 0); }
+  30% { clip: rect(14px, 9999px, 8px, 0); }
+  40% { clip: rect(99px, 9999px, 43px, 0); }
+  50% { clip: rect(48px, 9999px, 82px, 0); }
+  60% { clip: rect(81px, 9999px, 16px, 0); }
+  70% { clip: rect(55px, 9999px, 77px, 0); }
+  80% { clip: rect(6px, 9999px, 11px, 0); }
+  90% { clip: rect(95px, 9999px, 64px, 0); }
+  100% { clip: rect(64px, 9999px, 29px, 0); }
+}
+@keyframes glitchAnim2 {
+  0% { clip: rect(65px, 9999px, 100px, 0); }
+  20% { clip: rect(20px, 9999px, 60px, 0); }
+  40% { clip: rect(90px, 9999px, 30px, 0); }
+  60% { clip: rect(10px, 9999px, 75px, 0); }
+  80% { clip: rect(50px, 9999px, 5px, 0); }
+  100% { clip: rect(35px, 9999px, 95px, 0); }
+}
+
+.carContainer {
+  position: relative;
+  width: min(720px, 90vw);
+  height: 380px;
+  margin: 2rem 0;
+}
+.carContainer canvas {
+  cursor: grab;
+}
+.carContainer canvas:active {
+  cursor: grabbing;
+}
+
+.searchField {
+  transition: all 500ms ease;
+}
+.searchField:focus-within {
+  box-shadow: 0 0 60px rgb(255 60 60 / 0.4);
+  border-color: var(--accent);
+}
+
+.floatingParticles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fab {
+  box-shadow: 0 0 30px rgb(255 255 255 / 0.4);
+}
