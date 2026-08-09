@@ -318,6 +318,18 @@
         "price": 189.0,
         "brand": "HPS",
         "category": "cooling"
+      },
+      {
+        "name": "K20C1 Type R Swap Kit (FK8 Complete Engine/Trans)",
+        "price": 7995.0,
+        "brand": "OEM/FK8",
+        "category": "engine swap"
+      },
+      {
+        "name": "Hondata FlashPro (2017-2021 Civic Type R)",
+        "price": 749.0,
+        "brand": "Hondata",
+        "category": "tune"
       }
     ],
     "exhaust": [
@@ -326,6 +338,12 @@
         "price": 549.99,
         "brand": "PRL",
         "category": "downpipe"
+      },
+      {
+        "name": "HKS Legamax Premium Cat-Back Exhaust (FK8-Adapted)",
+        "price": 1299.0,
+        "brand": "HKS",
+        "category": "catback"
       },
       {
         "name": "Borla S-Type Cat-Back Exhaust 140742",
@@ -376,6 +394,12 @@
         "price": 42.99,
         "brand": "Gorilla",
         "category": "hardware"
+      },
+      {
+        "name": "FK8 Type R OEM 19x8.5 Wheels (Direct Fit)",
+        "price": 1495.0,
+        "brand": "Honda OEM",
+        "category": "wheel"
       }
     ],
     "brakes": [
@@ -384,6 +408,12 @@
         "price": 118.0,
         "brand": "StopTech",
         "category": "pads"
+      },
+      {
+        "name": "FK8 Type R Brembo 4-Piston BBK 350mm (Direct Fit)",
+        "price": 2195.0,
+        "brand": "Brembo",
+        "category": "bbk"
       },
       {
         "name": "Hawk HP Plus Track Pads (Front)",
