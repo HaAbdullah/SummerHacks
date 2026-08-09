@@ -21,6 +21,7 @@ import type {
   Car,
   ChatMessage,
   EcosystemAnalytics,
+  EngineAnalysisResponse,
   MediaKind,
   Mods,
   Note,
@@ -32,6 +33,19 @@ import * as backend from "./backend";
 import { buildGuideTemplates, type GuideTier } from "./seed";
 
 export { CompareError, compareNodes, toCompareNode } from "./compare";
+
+export async function analyzeEngineImage(
+  image: File,
+): Promise<EngineAnalysisResponse> {
+  return backend.analyzeEngineImage(image);
+}
+
+export async function renderEngineBlueprint(
+  image: File,
+  analysis: EngineAnalysisResponse,
+): Promise<Blob> {
+  return backend.renderEngineBlueprint(image, analysis);
+}
 
 // Local-only mock store — node-level Community/AI chat has no backend yet.
 let chats: ChatMessage[] = [];
@@ -182,6 +196,7 @@ export async function uploadNote(
   meta: {
     kind: MediaKind;
     author: string;
+    title?: string;
     body?: string;
     durationSec?: number;
     filename?: string;
@@ -192,7 +207,7 @@ export async function uploadNote(
   const form = new FormData();
   form.append("file", file, filename);
   form.append("kind", meta.kind);
-  form.append("title", defaultTitle(meta.kind, meta.body));
+  form.append("title", meta.title ?? defaultTitle(meta.kind, meta.body));
   form.append("body", meta.body ?? "");
   form.append("author", meta.author);
   if (meta.durationSec != null) form.append("durationSec", String(meta.durationSec));

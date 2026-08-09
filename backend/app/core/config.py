@@ -1,9 +1,16 @@
+from pathlib import Path
+
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+PROJECT_DIR = BACKEND_DIR.parent
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Root .env is the shared setup path; backend/.env can override it locally.
+        env_file=(PROJECT_DIR / ".env", BACKEND_DIR / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -19,7 +26,10 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # CORS — comma-separated origins in env, e.g. http://localhost:3000
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = (
+        "http://localhost:3000,http://127.0.0.1:3000,"
+        "http://localhost:3001,http://127.0.0.1:3001"
+    )
 
     # Supabase. Leave blank and the app falls back to the local JSON store, so it runs
     # with no setup. Set both and it switches to Postgres — no code change.
@@ -44,6 +54,21 @@ class Settings(BaseSettings):
     ai_model: str = "gpt-4o-mini"
     ai_timeout_seconds: float = 20.0
     compare_agent_recursion_limit: int = 20
+
+    # Engine-image blueprint workflow. Gemini owns visual understanding; these values
+    # stay separate from the OpenAI-compatible chat/compare configuration above.
+    gemini_api_key: str = ""
+    gemini_vision_model: str = "gemini-2.5-flash"
+    gemini_image_model: str = "gemini-2.5-flash-image"
+    blueprint_ai_timeout_seconds: float = Field(default=90.0, gt=0)
+    blueprint_generation_attempts: int = Field(default=2, ge=1, le=2)
+    blueprint_component_confidence_threshold: float = Field(default=0.80, ge=0, le=1)
+    blueprint_engine_detection_confidence_threshold: float = Field(
+        default=0.70, ge=0, le=1
+    )
+    blueprint_max_image_bytes: int = Field(default=15 * 1024 * 1024, gt=0)
+    blueprint_max_image_pixels: int = Field(default=40_000_000, gt=0)
+    blueprint_template_path: str = str(PROJECT_DIR / "Blueprint.png")
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, GitBranch, Search, Sparkles } from "lucide-react";
+import { ArrowRight, GitBranch, ScanLine, Search } from "lucide-react";
 import { FaDiscord, FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { searchCars } from "@/lib/api";
 import type { Car } from "@/lib/types";
@@ -138,6 +138,12 @@ export function Landing() {
           <Link href="/ecosystem" className="transition-colors hover:text-ink">
             Ecosystem Pulse
           </Link>
+          <Link
+            href="/blueprints/engine"
+            className="transition-colors hover:text-ink"
+          >
+            Engine Blueprint
+          </Link>
           <a href="#" className="transition-colors hover:text-ink">
             Community Build Logs
           </a>
@@ -146,13 +152,13 @@ export function Landing() {
           </a>
         </div>
         <div className="flex items-center gap-4">
-          <button
-            type="button"
+          <Link
+            href="/blueprints/engine"
             className="hidden items-center gap-2 rounded-full border border-line bg-white/5 px-4 py-2 text-xs font-semibold transition-all hover:bg-white/10 lg:flex"
           >
-            <Sparkles size={14} className="text-accent" />
-            AI BUILDER
-          </button>
+            <ScanLine size={14} className="text-accent" />
+            AI BLUEPRINT
+          </Link>
           <button
             type="button"
             className="px-5 py-2 text-sm font-semibold text-muted transition-colors hover:text-ink"

@@ -256,6 +256,46 @@ export interface AiSearchResult {
   explanation: string;
 }
 
+/* --- POST /api/blueprints/engine/analyze ---------------------------------- */
+
+export interface BoundingBox {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface EngineImageContext {
+  image_type: "ENGINE_BAY" | "ISOLATED_ENGINE" | "INVALID";
+  engine_detected: boolean;
+  engine_bbox: BoundingBox | null;
+  confidence: number;
+}
+
+export interface EngineComponent {
+  id: string;
+  name: string;
+  category: string;
+  confidence: number;
+  description: string;
+  bbox: BoundingBox;
+  possible_modification: boolean;
+  modification_description: string | null;
+}
+
+export interface EngineAnalysisResponse {
+  success: true;
+  image_context: EngineImageContext;
+  analysis: {
+    image_type: "ENGINE_BAY" | "ISOLATED_ENGINE";
+    engine_description: string;
+    engine_type: string | null;
+    components: EngineComponent[];
+    observations: string[];
+  };
+  component_confidence_threshold: number;
+}
+
 /** Ecosystem-wide analytics (hackathon “surfacing data” dashboard).
  *  Backed by GET /api/ecosystem/analytics — real counts from stored data. */
 export type AnalyticsRange = "7d" | "30d" | "90d";

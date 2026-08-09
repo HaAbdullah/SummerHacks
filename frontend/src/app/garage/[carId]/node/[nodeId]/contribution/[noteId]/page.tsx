@@ -2,6 +2,7 @@
 
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Mic, PenLine, Send, Upload } from "lucide-react";
 import {
   addContributionReply,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/api";
 import { resolveMediaUrl } from "@/lib/media-url";
 import type { Note, NoteReply } from "@/lib/types";
+import { BlueprintVersionActions } from "@/components/node/BlueprintVersionActions";
 
 function replyHasMedia(r: NoteReply): boolean {
   return (
@@ -36,6 +38,7 @@ export default function ContributionPage({
   params: Promise<{ carId: string; nodeId: string; noteId: string }>;
 }) {
   const { carId, nodeId, noteId } = use(params);
+  const router = useRouter();
   const [note, setNote] = useState<Note | null>(null);
   const [replies, setReplies] = useState<NoteReply[]>([]);
   const [loading, setLoading] = useState(true);
@@ -277,6 +280,20 @@ export default function ContributionPage({
               {note.body}
             </p>
           ) : null}
+
+          {note.kind === "blueprint" && mediaSrc && (
+            <div className="mt-5 flex justify-end border-t border-line pt-4">
+              <BlueprintVersionActions
+                note={note}
+                nodeId={nodeId}
+                onCreated={(created) =>
+                  router.push(
+                    `/garage/${encodeURIComponent(carId)}/node/${encodeURIComponent(nodeId)}/contribution/${encodeURIComponent(created.id)}`,
+                  )
+                }
+              />
+            </div>
+          )}
         </div>
 
         <div className="mt-8 flex items-center gap-2">

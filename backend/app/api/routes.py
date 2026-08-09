@@ -1,12 +1,13 @@
 from fastapi import APIRouter
 
-from app.api import graphs, vehicles
+from app.api import blueprints, graphs, vehicles
 from app.core.config import settings
 
 router = APIRouter()
 
 router.include_router(vehicles.router)
 router.include_router(graphs.router)
+router.include_router(blueprints.router)
 
 
 @router.get("/health")
