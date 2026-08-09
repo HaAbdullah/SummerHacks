@@ -29,9 +29,13 @@ class Settings(BaseSettings):
 
     # AI chatbox (node-level). Leave blank and chat falls back to a canned, still-useful
     # answer built from the node's own mods/notes — no key required to demo the UI.
-    # Model defaults to a cheap-but-competent chat model; override with AI_MODEL if needed.
+    # The same model also orchestrates comparison tools; all comparison arithmetic remains
+    # deterministic application code.
     ai_api_key: str = ""
+    ai_base_url: str = "https://api.openai.com/v1"
     ai_model: str = "gpt-4o-mini"
+    ai_timeout_seconds: float = 20.0
+    compare_agent_recursion_limit: int = 20
 
     @property
     def cors_origins_list(self) -> list[str]:

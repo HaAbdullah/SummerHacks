@@ -67,7 +67,7 @@ export default function GaragePage({
   };
 
   useEffect(() => {
-    void load();
+    queueMicrotask(() => void load());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [carId]);
 
