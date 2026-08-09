@@ -14,11 +14,13 @@ import logging
 from typing import Any
 
 from app.core.config import settings
+from app.repositories.store import COLLECTIONS
 
 logger = logging.getLogger(__name__)
 
-# Insert order matters: parents before children, so foreign keys hold.
-TABLES = ("cars", "nodes", "posts", "replies", "parts")
+# Insert order matters: parents before children, so foreign keys hold. Borrowed from the
+# JSON store so the two backends cannot drift apart on which collections exist.
+TABLES = COLLECTIONS
 
 # camelCase in the API  ->  snake_case in Postgres. Anything absent is identical in both.
 FIELD_MAP: dict[str, dict[str, str]] = {
@@ -57,6 +59,56 @@ FIELD_MAP: dict[str, dict[str, str]] = {
     "parts": {
         "carId": "car_id",
         "sourceUrl": "source_url",
+        "partType": "part_type",
+        "createdAt": "created_at",
+    },
+    "part_prices": {
+        "partId": "part_id",
+        "capturedAt": "captured_at",
+    },
+    "modifications": {
+        "carId": "car_id",
+        "createdAt": "created_at",
+    },
+    "node_modifications": {
+        "nodeId": "node_id",
+        "modificationId": "modification_id",
+        "createdAt": "created_at",
+    },
+    "modification_parts": {
+        "modificationId": "modification_id",
+        "partId": "part_id",
+        "requirementType": "requirement_type",
+        "choiceGroup": "choice_group",
+    },
+    "modification_dependencies": {
+        "modificationId": "modification_id",
+        "dependsOnModificationId": "depends_on_modification_id",
+        "dependencyType": "dependency_type",
+    },
+    "service_tasks": {
+        "taskType": "task_type",
+        "minHours": "min_hours",
+        "maxHours": "max_hours",
+        "accessGroup": "access_group",
+        "sharedAccessKey": "shared_access_key",
+    },
+    "modification_tasks": {
+        "modificationId": "modification_id",
+        "taskId": "task_id",
+        "requirementType": "requirement_type",
+    },
+    "task_dependencies": {
+        "taskId": "task_id",
+        "dependsOnTaskId": "depends_on_task_id",
+        "relationshipType": "relationship_type",
+    },
+    "build_estimate_runs": {
+        "carId": "car_id",
+        "fromNodeId": "from_node_id",
+        "toNodeId": "to_node_id",
+        "guideName": "guide_name",
+        "aiExplanation": "ai_explanation",
         "createdAt": "created_at",
     },
 }

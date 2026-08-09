@@ -12,7 +12,8 @@ from app.models.schemas import (
     BuildModPayload,
     Car,
     CommunityPost,
-    CompareResponse,
+    CompareRequest,
+    CompareResult,
     CreateNodeRequest,
     CreatePostRequest,
     CreateReplyRequest,
@@ -23,6 +24,7 @@ from app.models.schemas import (
     Stats,
 )
 from app.services import (
+    agentic_compare,
     ai_service,
     community_service,
     generations,
@@ -298,13 +300,22 @@ def get_build_mod(node_id: str) -> BuildModPayload:
     return payload
 
 
-@router.get("/ai/compare", response_model=CompareResponse, tags=["ai"])
-def compare_nodes(
-    from_node: str = Query(..., alias="from"),
-    to_node: str = Query(..., alias="to"),
-) -> CompareResponse:
-    """getCompareNode. Deterministic per-slot diff; no model involved."""
-    result = ai_service.compare(from_node, to_node)
-    if result is None:
-        raise HTTPException(404, "One or both nodes not found")
-    return result
+@router.post("/ai/compare", response_model=CompareResult, tags=["ai"])
+async def compare_nodes(req: CompareRequest) -> CompareResult:
+    """Transform a supplied Node A into supplied Node B through deterministic tools.
+
+    The route never retrieves either node. LangChain chooses the next tool call, while
+    application functions determine changes, copy target values, calculate catalogue
+    prices, and prove that the temporary state matches Node B.
+    """
+    try:
+        return await agentic_compare.compare_nodes(
+            req.node_a.model_dump(),
+            req.node_b.model_dump(),
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except agentic_compare.CompareConfigurationError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except agentic_compare.CompareWorkflowError as exc:
+        raise HTTPException(502, str(exc)) from exc

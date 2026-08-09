@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Flame } from "lucide-react";
-import { getPulse, getNode } from "@/lib/api";
+import { getPulse, getNode } from "@/lib/api/backend";
 import type { PulseData } from "@/lib/types";
 
 function useCountUp(target: number, ms = 650) {

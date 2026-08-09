@@ -3,7 +3,11 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mic, Send } from "lucide-react";
-import { addContributionReply, getContribution, getContributionReplies } from "@/lib/api";
+import {
+  addContributionReply,
+  getContribution,
+  getContributionReplies,
+} from "@/lib/api/backend";
 import type { Note, NoteReply } from "@/lib/types";
 
 function timeAgo(iso: string): string {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, GitFork } from "lucide-react";
-import { createBranch } from "@/lib/api";
+import { createBranch } from "@/lib/api/backend";
 import type { BuildNodeData } from "@/lib/types";
 
 const ATTRIBUTE_OPTIONS = [

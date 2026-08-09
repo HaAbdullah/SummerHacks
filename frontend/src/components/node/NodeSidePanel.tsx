@@ -4,9 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   askAiChat,
   generateBuildGuide,
-  getChat,
-  sendChatMessage,
 } from "@/lib/api";
+import { getChat, sendChatMessage } from "@/lib/api/backend";
 import type { BuildGuide, BuildNodeData, ChatMessage } from "@/lib/types";
 
 export function NodeSidePanel({ node }: { node: BuildNodeData }) {
@@ -78,7 +77,7 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
           nodeId: node.id,
           author: "BuildaMod AI",
           avatarColor: "#5e6ad2",
-          body: `Guide ready: ${g.title}. ${g.difficulty} · ${g.estCost} · ${g.estTime}.`,
+          body: `Guide ready: ${g.title}. ${g.estCost} · ${g.estTime}.`,
           createdAt: new Date().toISOString(),
           role: "ai",
         },
@@ -189,9 +188,8 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
             <p className="text-[13px] font-semibold tracking-tight text-ink">
               {guide.title}
             </p>
-            <div className="mt-2 grid grid-cols-3 gap-1.5">
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
               {[
-                ["Level", guide.difficulty],
                 ["Cost", guide.estCost],
                 ["Time", guide.estTime],
               ].map(([k, v]) => (

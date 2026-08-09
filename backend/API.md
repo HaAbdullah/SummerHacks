@@ -120,7 +120,7 @@ tag traces back to one slot (`engine-turbo`, `brakes-bbk`, `wheels-allterrain`).
 | GET | `/posts/{postId}/replies` | **getReply** |
 | POST | `/posts/{postId}/replies` | **addReply** |
 | GET | `/ai/build-mod/{nodeId}` | **getBuildModAI** (Ahmed) |
-| GET | `/ai/compare?from=&to=` | **getCompareNode** (Ahmed) |
+| POST | `/ai/compare` | LangChain-orchestrated, deterministically validated node comparison |
 
 There is no `createDAG` to call — both graph routes create on miss, so the frontend can
 never forget it. Opening a generation nobody has modded yet returns a graph with just its
@@ -401,37 +401,6 @@ from the name, so reseeding updates a part instead of duplicating it.
 
 # For Ahmed
 
-## GET `/ai/compare?from=n-turbo&to=n-rally` — getCompareNode
-
-**Computed in Python, not by a model.** Consume `changes`, write `explanation`.
-
-```json
-{
-  "carId": "toyota-corolla-e170",
-  "fromNodeId": "n-turbo",
-  "toNodeId": "n-rally",
-  "fromTitle": "Turbo Build",
-  "toTitle": "Turbo Rally Build",
-  "changes": [
-    {
-      "slot": "engine",
-      "status": "modified",
-      "before": "2ZR-FE, Garrett GT2860 turbo, 8psi, front-mount intercooler",
-      "after": "Built bottom end, forged rods and pistons, GT3071R at 14psi for reliability"
-    },
-    { "slot": "exhaust", "status": "modified", "before": "3in downpipe, catless, 3in catback", "after": "3.5in high-clearance turbo-back" },
-    { "slot": "wheels",  "status": "added",    "before": "", "after": "16in gravel-spec, 215/65 all-terrain" },
-    { "slot": "brakes",  "status": "modified", "before": "Slotted front rotors, performance pads", "after": "4-pot front, rally pads, hydraulic handbrake" }
-  ],
-  "changedCount": 4,
-  "commonAncestorId": "n-root",
-  "explanation": null
-}
-```
-
-`status` ∈ `added | removed | modified | unchanged`. Always exactly four entries, one per
-slot. `explanation` is yours to fill.
-
 ## GET `/ai/build-mod/n-rally` — getBuildModAI
 
 Everything needed to write a build guide, in one call.
@@ -471,6 +440,106 @@ every post body on the node, already transcribed — the real build knowledge.
 
 ---
 
+## POST `/ai/compare` — agentic node transformation
+
+Send the two complete nodes already available to the caller. The endpoint does not
+retrieve them again. It loads only the existing parts catalogue for `node_b.car_id`.
+
+Empty strings inside `mods` are normalized to `null`; all social and graph metadata is
+accepted as part of the complete node but ignored for mechanical comparison.
+
+```json
+{
+  "node_a": {
+    "id": "h-si-3in",
+    "car_id": "honda-civic-fc-fk-10th-gen",
+    "title": "Current",
+    "parent_ids": [],
+    "attributes": [],
+    "mods": {
+      "engine": null,
+      "exhaust": "MagnaFlow Resonated Cat-Back",
+      "wheels": null,
+      "brakes": null
+    },
+    "summary": "",
+    "stats": {"forks": 0, "notes": 0, "contributors": 1, "heat": 0.4},
+    "created_by": "user",
+    "created_at": "2026-08-09T00:00:00Z",
+    "is_root": false,
+    "level": 2
+  },
+  "node_b": {
+    "id": "h-target",
+    "car_id": "honda-civic-fc-fk-10th-gen",
+    "title": "Target",
+    "parent_ids": [],
+    "attributes": [],
+    "mods": {
+      "engine": "Hondata FlashPro (2016-2021 Civic 1.5T)",
+      "exhaust": "Borla S-Type Cat-Back Exhaust 140742",
+      "wheels": null,
+      "brakes": "StopTech Street Performance Pads (Front)"
+    },
+    "summary": "",
+    "stats": {"forks": 0, "notes": 0, "contributors": 1, "heat": 0.4},
+    "created_by": "user",
+    "created_at": "2026-08-09T00:00:00Z",
+    "is_root": false,
+    "level": 4
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "base_node_id": "h-si-3in",
+  "target_node_id": "h-target",
+  "car_id": "honda-civic-fc-fk-10th-gen",
+  "changes": [
+    {"mod_key": "engine", "current": null, "target": "Hondata FlashPro (2016-2021 Civic 1.5T)", "operation": "add"},
+    {"mod_key": "exhaust", "current": "MagnaFlow Resonated Cat-Back", "target": "Borla S-Type Cat-Back Exhaust 140742", "operation": "replace"},
+    {"mod_key": "wheels", "current": null, "target": null, "operation": "unchanged"},
+    {"mod_key": "brakes", "current": null, "target": "StopTech Street Performance Pads (Front)", "operation": "add"}
+  ],
+  "operations": [
+    {"operation": "add", "mod_key": "engine", "added": "Hondata FlashPro (2016-2021 Civic 1.5T)", "removed": null},
+    {"operation": "replace", "mod_key": "exhaust", "added": "Borla S-Type Cat-Back Exhaust 140742", "removed": "MagnaFlow Resonated Cat-Back"},
+    {"operation": "add", "mod_key": "brakes", "added": "StopTech Street Performance Pads (Front)", "removed": null}
+  ],
+  "pricing": {
+    "new_parts_cost": 1912.99,
+    "removed_parts_value": 879.0,
+    "build_value_difference": 1033.99,
+    "pricing_complete": true,
+    "unresolved_added_parts": [],
+    "unresolved_removed_parts": []
+  },
+  "resulting_mods": {
+    "engine": "Hondata FlashPro (2016-2021 Civic 1.5T)",
+    "exhaust": "Borla S-Type Cat-Back Exhaust 140742",
+    "wheels": null,
+    "brakes": "StopTech Street Performance Pads (Front)"
+  },
+  "matches_target": true
+}
+```
+
+`build_value_difference` is the difference between catalogue values. It is not the
+owner's actual upgrade cost because removed parts are not necessarily sold.
+
+LangChain only selects among seven request-scoped tools. The tools detect changes, copy
+target values, perform exact-name catalogue lookups, calculate all arithmetic, and
+validate completion. The model's final prose is discarded. Missing catalogue names are
+reported in `unresolved_*_parts`; prices are never fuzzy-matched or estimated.
+
+The route returns `400` for different cars, `503` when `AI_API_KEY` is absent, and `502`
+when the agent stops without a valid tool-produced result.
+
+---
+
 ## Architecture
 
 ```
@@ -479,12 +548,23 @@ app/services/     business logic
     graph_service       graphs, nodes, stats
     generations         curated generation table
     community_service   posts, replies
-    ai_service          compare, build payload
+    ai_service          existing build-payload assembly
+    agentic_compare     LangChain tool-calling loop and request-scoped state
+    compare_tools       change truth, mutations, pricing, validation
+    parts               the catalogue browser
     placement           where a new build goes in the DAG
     tagging             mods -> filter tags
     transcription       media -> text (stub; swap in a model here)
 app/repositories/ storage — the only module that touches the database
 app/models/       Pydantic schemas — every contract on this page
+```
+
+Seeding and deterministic verification:
+
+```bash
+python scripts/seed.py                # cars, nodes, posts, replies
+python scripts/seed_parts.py          # parts + part_prices
+python -m pytest tests                # comparison tools and mocked orchestration
 ```
 
 Generations are hand-curated in `data/generations.json` — vPIC has no generation concept,

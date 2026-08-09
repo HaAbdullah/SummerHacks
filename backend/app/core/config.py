@@ -27,6 +27,14 @@ class Settings(BaseSettings):
     supabase_service_key: str = ""
     supabase_bucket: str = "community-media"
 
+    # LangChain comparison orchestrator. The model only selects deterministic tools;
+    # comparison, mutation, pricing, and validation remain application code.
+    ai_api_key: str = ""
+    ai_base_url: str = "https://api.openai.com/v1"
+    ai_model: str = "gpt-4o-mini"
+    ai_timeout_seconds: float = 20.0
+    compare_agent_recursion_limit: int = 20
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

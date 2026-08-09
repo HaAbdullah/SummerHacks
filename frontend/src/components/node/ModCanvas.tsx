@@ -13,7 +13,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Mic, Upload, PenLine, ZoomIn, ZoomOut } from "lucide-react";
-import { addNote, updateNotePosition } from "@/lib/api";
+import { addNote, updateNotePosition } from "@/lib/api/backend";
 import type { Note } from "@/lib/types";
 
 const YOU = "#5e6ad2";

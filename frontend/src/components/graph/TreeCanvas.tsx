@@ -12,8 +12,9 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { motion } from "framer-motion";
-import { getGraph, createBranch } from "@/lib/api";
-import type { BuildNodeData } from "@/lib/types";
+import { getGraph, createBranch } from "@/lib/api/backend";
+import { compareNodes, toCompareNode } from "@/lib/api/compare";
+import type { BuildNodeData, CompareResult } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import {
   filterMatchingIds,
@@ -24,6 +25,7 @@ import { layoutGraph } from "./layout";
 import { BuildNode, type BuildFlowNode } from "./BuildNode";
 import { BranchEdge, type BranchFlowEdge } from "./BranchEdge";
 import { AddBranchModal } from "./AddBranchModal";
+import { CompareResultPanel } from "./CompareResultPanel";
 
 const nodeTypes = { build: BuildNode };
 const edgeTypes = { branch: BranchEdge };
@@ -39,6 +41,10 @@ function CanvasInner({
   const [buildNodes, setBuildNodes] = useState<BuildNodeData[]>([]);
   const [loading, setLoading] = useState(true);
   const [zoomPct, setZoomPct] = useState(75);
+  const [compareSelection, setCompareSelection] = useState<string[]>([]);
+  const [compareResult, setCompareResult] = useState<CompareResult | null>(null);
+  const [compareBusy, setCompareBusy] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
   const entered = useRef(false);
   const navigating = useRef(false);
   const { fitView, setCenter, getZoom, zoomIn, zoomOut } = useReactFlow();
@@ -144,6 +150,10 @@ function CanvasInner({
             highlighted: isHighlighted(id) && !isDimmed(id),
             selected: false,
             mergeSelected: mergeSelection.includes(id),
+            compareSelected: compareSelection.includes(id),
+            compareOrder: compareSelection.includes(id)
+              ? ((compareSelection.indexOf(id) + 1) as 1 | 2)
+              : undefined,
             flash: flashNodeId === id,
           },
         };
@@ -187,6 +197,7 @@ function CanvasInner({
     searchPath,
     searchSet,
     mergeSelection,
+    compareSelection,
     flashNodeId,
     fitView,
     setNodes,
@@ -238,7 +249,18 @@ function CanvasInner({
   );
 
   const onNodeClick: NodeMouseHandler<BuildFlowNode> = useCallback(
-    (_e, node) => {
+    (e, node) => {
+      if (e.shiftKey) {
+        setCompareSelection((selected) => {
+          if (selected.includes(node.id)) {
+            return selected.filter((id) => id !== node.id);
+          }
+          return selected.length < 2 ? [...selected, node.id] : [selected[1], node.id];
+        });
+        setCompareResult(null);
+        setCompareError(null);
+        return;
+      }
       if (mergeMode) {
         toggleMergeSelection(node.id);
         return;
@@ -247,6 +269,28 @@ function CanvasInner({
     },
     [mergeMode, toggleMergeSelection, openNode],
   );
+
+  const runComparison = async () => {
+    if (compareSelection.length !== 2 || compareBusy) return;
+    const base = buildNodes.find((node) => node.id === compareSelection[0]);
+    const target = buildNodes.find((node) => node.id === compareSelection[1]);
+    if (!base || !target) return;
+
+    setCompareBusy(true);
+    setCompareError(null);
+    setCompareResult(null);
+    try {
+      setCompareResult(
+        await compareNodes(toCompareNode(base), toCompareNode(target)),
+      );
+    } catch (error) {
+      setCompareError(
+        error instanceof Error ? error.message : "Node comparison failed",
+      );
+    } finally {
+      setCompareBusy(false);
+    }
+  };
 
   const onNodeMouseEnter: NodeMouseHandler<BuildFlowNode> = useCallback(
     (_e, node) => setHoverNodeId(node.id),
@@ -321,6 +365,21 @@ function CanvasInner({
       <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
         <button
           type="button"
+          onClick={runComparison}
+          disabled={compareSelection.length !== 2 || compareBusy}
+          className="btn btn-primary focus-ring disabled:cursor-not-allowed disabled:opacity-45"
+          title="Shift-click two nodes, then compare"
+        >
+          {compareBusy ? "Comparing…" : "Compare"}
+        </button>
+        {compareSelection.length < 2 && (
+          <span className="rounded-[var(--radius-sm)] border border-line bg-surface px-2.5 py-1.5 text-[12px] text-muted">
+            Shift-click {2 - compareSelection.length} node
+            {compareSelection.length === 0 ? "s" : ""}
+          </span>
+        )}
+        <button
+          type="button"
           onClick={() => {
             setMergeMode(!mergeMode);
             clearMergeSelection();
@@ -346,6 +405,30 @@ function CanvasInner({
           </span>
         )}
       </div>
+
+      {compareError && (
+        <div className="absolute right-3 top-14 z-30 max-w-[390px] rounded-xl border border-red-500/25 bg-red-950/90 px-4 py-3 text-[12px] text-red-100 shadow-xl">
+          {compareError}
+        </div>
+      )}
+
+      {compareResult &&
+        (() => {
+          const base = buildNodes.find(
+            (node) => node.id === compareResult.base_node_id,
+          );
+          const target = buildNodes.find(
+            (node) => node.id === compareResult.target_node_id,
+          );
+          return base && target ? (
+            <CompareResultPanel
+              base={base}
+              target={target}
+              result={compareResult}
+              onClose={() => setCompareResult(null)}
+            />
+          ) : null;
+        })()}
 
       {addBranchRequest && (
         <AddBranchModal
@@ -413,7 +496,7 @@ function CanvasInner({
       </div>
 
       <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 text-[11px] text-muted-2">
-        Click a node to open it · Right-click to fork
+        Click to open · Shift-click two nodes to compare · Right-click to fork
       </p>
     </motion.div>
   );

@@ -8,7 +8,7 @@ import {
   getCar,
   getGraph,
   createBranch,
-} from "@/lib/api";
+} from "@/lib/api/backend";
 import type { AttributeGroup, BuildNodeData, Car } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { filterMatchingIds } from "@/lib/graph-utils";
@@ -30,7 +30,6 @@ export default function GaragePage({
   const { activeFilters, setFlashNodeId, openAddBranchModal } = useAppStore();
 
   const load = async () => {
-    setLoading(true);
     const [c, g, gr] = await Promise.all([
       getCar(carId),
       getAttributeGroups(carId),
@@ -43,8 +42,21 @@ export default function GaragePage({
   };
 
   useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let cancelled = false;
+    void Promise.all([
+      getCar(carId),
+      getAttributeGroups(carId),
+      getGraph(carId),
+    ]).then(([c, g, gr]) => {
+      if (cancelled) return;
+      setCar(c);
+      setGroups(g);
+      setGraph(gr);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [carId]);
 
   const matchSet = useMemo(

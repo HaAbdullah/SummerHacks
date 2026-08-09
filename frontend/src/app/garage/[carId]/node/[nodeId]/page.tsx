@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { getNode, getNotes } from "@/lib/api";
+import { getNode, getNotes } from "@/lib/api/backend";
 import type { BuildNodeData, Note } from "@/lib/types";
 import { ModCanvas } from "@/components/node/ModCanvas";
 import { NodeInfoPanel } from "@/components/node/NodeInfoPanel";

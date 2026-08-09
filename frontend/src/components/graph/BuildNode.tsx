@@ -12,23 +12,36 @@ export type BuildFlowNode = Node<
     highlighted?: boolean;
     selected?: boolean;
     mergeSelected?: boolean;
+    compareSelected?: boolean;
+    compareOrder?: 1 | 2;
     flash?: boolean;
   },
   "build"
 >;
 
 function BuildNodeComponent({ data }: NodeProps<BuildFlowNode>) {
-  const { build, dimmed, highlighted, selected, mergeSelected, flash } = data;
+  const {
+    build,
+    dimmed,
+    highlighted,
+    selected,
+    mergeSelected,
+    compareSelected,
+    compareOrder,
+    flash,
+  } = data;
   const heat = build.stats.heat;
   const isRoot = build.parentIds.length === 0;
   const isFusion = build.parentIds.length > 1;
   const size = NODE_SIZE * (0.85 + heat * 0.4);
-  const active = !!(selected || highlighted || mergeSelected);
+  const active = !!(selected || highlighted || mergeSelected || compareSelected);
 
   const kicker = isRoot ? "Root" : isFusion ? "Fusion" : "Branch";
 
-  const circleClasses = active
-    ? "bg-accent/15 border-accent/80"
+  const circleClasses = compareSelected
+    ? "bg-blue-500/15 border-blue-400/80"
+    : active
+      ? "bg-accent/15 border-accent/80"
     : "bg-surface border-blue-900";
 
   return (
@@ -56,9 +69,18 @@ function BuildNodeComponent({ data }: NodeProps<BuildFlowNode>) {
           filter: flash ? "brightness(1.35)" : undefined,
         }}
       >
+        {compareOrder && (
+          <span className="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-blue-300/50 bg-blue-500 text-[9px] font-black text-white shadow">
+            {compareOrder === 1 ? "A" : "B"}
+          </span>
+        )}
         <span
           className={`text-[8px] font-black uppercase leading-none tracking-wider ${
-            active ? "text-accent/80" : "text-muted"
+            compareSelected
+              ? "text-blue-300"
+              : active
+                ? "text-accent/80"
+                : "text-muted"
           }`}
         >
           {kicker}

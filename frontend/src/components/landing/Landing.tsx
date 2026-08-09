@@ -4,19 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, GitBranch, Search, Sparkles } from "lucide-react";
 import { FaDiscord, FaInstagram, FaXTwitter } from "react-icons/fa6";
-import { searchCars } from "@/lib/api";
+import { searchCars } from "@/lib/api/backend";
 import type { Car } from "@/lib/types";
 import { CarCard, type FeaturedCar } from "./CarCard";
 
 const RECENT_CARS = [
-  { id: "toyota-corolla", label: "Toyota Corolla" },
-  { id: "honda-civic", label: "Honda Civic" },
-  { id: "mazda-miata", label: "Mazda Miata" },
+  { id: "toyota-corolla-e170", label: "Toyota Corolla E170" },
+  { id: "honda-civic-fc-fk-10th-gen", label: "Honda Civic 10th Gen" },
+  { id: "subaru-wrx-va", label: "Subaru WRX VA" },
 ];
 
 const FEATURED_CARS: FeaturedCar[] = [
   {
-    id: "toyota-corolla",
+    id: "toyota-corolla-e170",
     make: "Toyota",
     model: "Corolla",
     badgeLabel: "HOT BRANCH",
@@ -30,7 +30,7 @@ const FEATURED_CARS: FeaturedCar[] = [
     extraCount: 12,
   },
   {
-    id: "honda-civic",
+    id: "honda-civic-fc-fk-10th-gen",
     make: "Honda",
     model: "Civic",
     badgeLabel: "PRO BUILDS",
@@ -44,9 +44,9 @@ const FEATURED_CARS: FeaturedCar[] = [
     extraCount: 5,
   },
   {
-    id: "mazda-miata",
-    make: "Mazda",
-    model: "Miata",
+    id: "subaru-wrx-va",
+    make: "Subaru",
+    model: "WRX",
     badgeLabel: "WILD BRANCH",
     badgeClassName: "bg-yellow-500",
     nodeCount: "980 NODES",

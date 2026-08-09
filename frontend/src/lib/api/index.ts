@@ -37,6 +37,8 @@ import {
   seedNotes,
 } from "./seed";
 
+export { CompareError, compareNodes } from "./compare";
+
 // In-memory session store (mutated by createBranch / addNote)
 let nodes: BuildNodeData[] = structuredClone(seedNodes);
 let notes: Note[] = structuredClone(seedNotes);
@@ -245,7 +247,7 @@ export async function askAiChat(
     author: "BuildaMod AI",
     avatarColor: "#0071e3",
     body: node
-      ? `For **${node.title}**: based on community notes, prioritize ${node.attributes.slice(0, 3).join(", ") || "core mods"} first. Est. difficulty tracks heat (${Math.round(node.stats.heat * 100)}). Want a full build guide or a part list?`
+      ? `For **${node.title}**: based on community notes, prioritize ${node.attributes.slice(0, 3).join(", ") || "core mods"} first. Community heat is ${Math.round(node.stats.heat * 100)}. Want a full build guide or a part list?`
       : "I can help plan this build — ask about parts, cost, or steps.",
     createdAt: new Date().toISOString(),
     role: "ai",
@@ -360,7 +362,6 @@ export async function generateBuildGuide(nodeId: string): Promise<BuildGuide> {
   return {
     nodeId,
     title: `Build guide — ${node.title}`,
-    difficulty: tmpl.difficulty,
     estCost: tmpl.estCost,
     estTime: tmpl.estTime,
     parts: tmpl.parts.map((p) => ({

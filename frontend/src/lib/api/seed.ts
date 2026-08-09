@@ -561,7 +561,6 @@ export const buildGuideTemplates: Record<
   Omit<BuildGuide, "nodeId" | "title" | "renderImage">
 > = {
   offroad: {
-    difficulty: "Advanced",
     estCost: "$4,200–$9,800",
     estTime: "3–6 weekends",
     parts: [
@@ -610,7 +609,6 @@ export const buildGuideTemplates: Record<
     ],
   },
   street: {
-    difficulty: "Intermediate",
     estCost: "$1,800–$4,500",
     estTime: "2–4 weekends",
     parts: [
@@ -651,7 +649,6 @@ export const buildGuideTemplates: Record<
     ],
   },
   sleek: {
-    difficulty: "Beginner",
     estCost: "$900–$3,200",
     estTime: "1–3 weekends",
     parts: [

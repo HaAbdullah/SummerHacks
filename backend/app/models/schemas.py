@@ -234,32 +234,81 @@ class Stats(BaseModel):
         return self.builds
 
 
-# --- AI (Ahmed) --------------------------------------------------------------------
-
-class ModChange(BaseModel):
-    slot: str
-    status: Literal["added", "removed", "modified", "unchanged"]
-    before: str
-    after: str
+# --- AI ----------------------------------------------------------------------------
+CompareOperation = Literal["add", "remove", "replace", "unchanged"]
+CompareMutation = Literal["add", "remove", "replace"]
 
 
-class CompareResponse(BaseModel):
-    """Deterministic diff, computed in Python — never by a model.
+class CompareNodeMods(BaseModel):
+    """Nullable mod slots used only by the comparison workflow.
 
-    Ahmed's layer consumes `changes` and fills `explanation`. Keeping the maths separate
-    means the diff is testable without an API key, cannot invent a change that did not
-    happen, and still renders if the AI call fails.
+    The core graph's ``Mods`` model intentionally continues using empty strings. This
+    separate API model accepts the normalized representation without changing graph,
+    placement, filtering, or blueprint behavior.
     """
 
-    carId: str
-    fromNodeId: str
-    toNodeId: str
-    fromTitle: str
-    toTitle: str
-    changes: list[ModChange]
-    changedCount: int
-    commonAncestorId: str | None = None
-    explanation: str | None = None
+    engine: str | None = None
+    exhaust: str | None = None
+    wheels: str | None = None
+    brakes: str | None = None
+
+
+class CompareNode(BaseModel):
+    """Complete node supplied to POST /ai/compare; no database lookup is needed."""
+
+    id: str
+    car_id: str
+    title: str
+    parent_ids: list[str] = Field(default_factory=list)
+    attributes: list[str] = Field(default_factory=list)
+    mods: CompareNodeMods = Field(default_factory=CompareNodeMods)
+    summary: str = ""
+    hero_image: str | None = None
+    stats: NodeStats = Field(default_factory=NodeStats)
+    created_by: str
+    created_at: str
+    is_root: bool = False
+    slot: str | None = None
+    level: int = 0
+
+
+class CompareRequest(BaseModel):
+    node_a: CompareNode
+    node_b: CompareNode
+
+
+class CompareChange(BaseModel):
+    mod_key: Literal["engine", "exhaust", "wheels", "brakes"]
+    current: str | None
+    target: str | None
+    operation: CompareOperation
+
+
+class CompareOperationResult(BaseModel):
+    operation: CompareMutation
+    mod_key: Literal["engine", "exhaust", "wheels", "brakes"]
+    added: str | None = None
+    removed: str | None = None
+
+
+class ComparePricing(BaseModel):
+    new_parts_cost: float
+    removed_parts_value: float
+    build_value_difference: float
+    pricing_complete: bool
+    unresolved_added_parts: list[str] = Field(default_factory=list)
+    unresolved_removed_parts: list[str] = Field(default_factory=list)
+
+
+class CompareResult(BaseModel):
+    base_node_id: str
+    target_node_id: str
+    car_id: str
+    changes: list[CompareChange]
+    operations: list[CompareOperationResult]
+    pricing: ComparePricing
+    resulting_mods: CompareNodeMods
+    matches_target: bool
 
 
 class BuildModPayload(BaseModel):

@@ -24,6 +24,18 @@ from scripts.seed_data import ALL_CARS, CASTS, SYSTEM_AUTHOR  # noqa: E402
 
 NOW = datetime.now(timezone.utc)
 
+# Reference data this script does not own. Carried across a demo-content reseed.
+PRESERVED = (
+    "parts",
+    "part_prices",
+    "modifications",
+    "modification_parts",
+    "modification_dependencies",
+    "service_tasks",
+    "modification_tasks",
+    "task_dependencies",
+)
+
 
 def ago(hours: float) -> str:
     return (NOW - timedelta(hours=hours)).isoformat().replace("+00:00", "Z")
@@ -160,10 +172,16 @@ def main() -> None:
 
     validate(cars, nodes, posts, replies)
 
-    existing_parts = {p["id"]: p for p in store.all_of("parts")}
+    # Reference catalogue data is curated by separate seeders, so content reseeds carry
+    # it across untouched. Node links and historical comparison runs are intentionally
+    # not preserved because they can point at nodes replaced by this reset.
+    preserved = {
+        collection: {row["id"]: row for row in store.all_of(collection)}
+        for collection in PRESERVED
+    }
+
     store.reset({
-        "cars": cars, "nodes": nodes, "posts": posts,
-        "replies": replies, "parts": existing_parts,
+        "cars": cars, "nodes": nodes, "posts": posts, "replies": replies, **preserved,
     })
 
     print(f"Seeded {len(cars)} cars, {len(nodes)} nodes, {len(posts)} posts, "
@@ -175,8 +193,9 @@ def main() -> None:
         voice = sum(1 for p in car_posts if p["kind"] == "voice")
         print(f"  {car_id:32} {len(car_nodes):2} nodes  {len(car_posts):2} posts  "
               f"{voice} voice  merge: {merges}")
-    if existing_parts:
-        print(f"  (kept {len(existing_parts)} parts — rerun seed_parts.py to refresh)")
+    kept = {name: len(rows) for name, rows in preserved.items() if rows}
+    if kept:
+        print(f"  (kept {kept} — rerun seed_parts.py to refresh parts and prices)")
 
 
 def validate(cars: dict, nodes: dict, posts: dict, replies: dict) -> None:

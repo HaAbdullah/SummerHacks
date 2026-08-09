@@ -126,8 +126,224 @@ create table if not exists parts (
   created_at timestamptz not null default now()
 );
 
+-- Added for build-comparison catalogue data. Separate ALTERs rather than a wider CREATE because the
+-- table already exists on every deployed database, where `create table if not exists` is
+-- a no-op and would silently skip the new columns.
+--
+-- `price`/`currency` above are used by the catalogue browser and the current exact-match
+-- comparison. `part_prices` below preserves dated market values for future selection.
+alter table parts add column if not exists sku         text;
+alter table parts add column if not exists subcategory text not null default '';
+alter table parts add column if not exists part_type   text not null default 'primary';
+alter table parts add column if not exists metadata    jsonb not null default '{}';
+alter table parts alter column brand set default '';
+
+-- Drop-then-add so re-running the file cannot fail on an existing constraint.
+alter table parts drop constraint if exists parts_part_type_check;
+alter table parts add  constraint parts_part_type_check
+  check (part_type in ('primary','supporting','consumable','replacement'));
+
+-- Some supporting parts belong to no single mod slot (brake fluid, shop consumables).
+alter table parts alter column slot drop not null;
+
 create index if not exists parts_car_slot_idx on parts (car_id, slot);
 create index if not exists parts_category_idx on parts (car_id, category);
+create index if not exists parts_car_type_idx on parts (car_id, part_type);
+
+-- --------------------------------------------------------------------- part_prices
+
+-- Prices move, so timestamped rows preserve history alongside the current value on parts.
+create table if not exists part_prices (
+  id          text primary key,
+  part_id     text not null references parts(id) on delete cascade,
+  amount      numeric(12,2) not null,
+  currency    text not null default 'USD',
+  source      text not null default '',
+  captured_at timestamptz not null default now()
+);
+
+create index if not exists part_prices_part_idx on part_prices (part_id, captured_at desc);
+
+-- ------------------------------------------------------------------- modifications
+
+-- A modification is the CONCEPT — "Exhaust Upgrade", "TPMS Replacement" — not a product.
+-- Products live in `parts`, and `modification_parts` joins the two. Keeping them apart is
+-- what lets one modification offer three interchangeable sensors without the build guide
+-- pretending you need all three.
+--
+-- `car_id` is nullable: a modification that applies to any car (a generic fluid service)
+-- leaves it null, and the resolver treats null as "fits everything".
+create table if not exists modifications (
+  id          text primary key,
+  car_id      text references cars(id) on delete cascade,
+  name        text not null,
+  slot        text not null check (slot in ('engine','exhaust','wheels','brakes')),
+  description text not null default '',
+  -- Optional catalogue-specific metadata; it is not interpreted by the current endpoint.
+  metadata    jsonb not null default '{}',
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists modifications_car_slot_idx on modifications (car_id, slot);
+
+-- -------------------------------------------------------------- node_modifications
+
+-- The structured half of a node's build. `nodes.mods` stays exactly as it was — free text
+-- the UI, the filter panel and the blueprint all read. This table is what /ai/compare
+-- subtracts, because "which mods differ" has to be a set operation, not a string diff.
+create table if not exists node_modifications (
+  id              text primary key,
+  node_id         text not null references nodes(id) on delete cascade,
+  modification_id text not null references modifications(id) on delete cascade,
+  configuration   jsonb not null default '{}',
+  created_at      timestamptz not null default now(),
+  unique(node_id, modification_id)
+);
+
+create index if not exists node_mods_node_idx on node_modifications (node_id);
+create index if not exists node_mods_mod_idx  on node_modifications (modification_id);
+
+-- -------------------------------------------------------------- modification_parts
+
+-- Every part a modification needs, and how badly it needs it.
+--
+--   role              what the part IS in this job. `included` ships in the box, so it
+--                     appears on the list at zero cost and is never charged twice.
+--   requirement_type  whether it is bought. `conditional` is bought only if `condition`
+--                     passes; `optional` is surfaced but never added to the total.
+--   choice_group      interchangeable products. Three crankshaft sensors in one group
+--                     means a consumer should pick one instead of summing all three.
+create table if not exists modification_parts (
+  id               text primary key,
+  modification_id  text not null references modifications(id) on delete cascade,
+  part_id          text not null references parts(id) on delete cascade,
+  role             text not null check (
+                     role in ('primary','supporting','consumable','included','alternative')
+                   ),
+  requirement_type text not null default 'required' check (
+                     requirement_type in ('required','conditional','optional','included')
+                   ),
+  quantity         numeric(8,2) not null default 1,
+  choice_group     text,
+  condition        jsonb,
+  unique(modification_id, part_id)
+);
+
+create index if not exists mod_parts_mod_idx    on modification_parts (modification_id);
+create index if not exists mod_parts_part_idx   on modification_parts (part_id);
+create index if not exists mod_parts_choice_idx on modification_parts (modification_id, choice_group);
+
+-- ------------------------------------------------------- modification_dependencies
+
+-- Modification-to-modification edges reserved for dependency-aware build guides.
+--
+--   required     pulled into the build scope automatically. A turbo needs an ECU tune.
+--   conditional  pulled in only when `condition` passes.
+--   recommended  reported, never charged. A recommendation that silently inflated the
+--                quote would make the number untrustworthy.
+--   sequence     ordering only. Does not widen the scope; constrains task stages when
+--                both modifications are already in the build.
+create table if not exists modification_dependencies (
+  id                         text primary key,
+  modification_id            text not null references modifications(id) on delete cascade,
+  depends_on_modification_id text not null references modifications(id) on delete cascade,
+  dependency_type            text not null check (
+                               dependency_type in
+                                 ('required','conditional','recommended','sequence')
+                             ),
+  condition                  jsonb,
+  notes                      text not null default '',
+  unique(modification_id, depends_on_modification_id, dependency_type)
+);
+
+create index if not exists mod_deps_mod_idx on modification_dependencies (modification_id);
+create index if not exists mod_deps_dep_idx on modification_dependencies (depends_on_modification_id);
+
+-- ------------------------------------------------------------------- service_tasks
+
+-- The physical work. Hours are a min/max band because a shop quote is a band.
+--
+-- `shared_access_key` is the interesting column: brake pads, wheel spacers and a TPMS
+-- sensor all start by getting the front wheel off. Tag all three teardown tasks
+-- "front-wheel-access" so a future scheduler can count that access once for the whole
+-- build. `access_group` is the looser label for the work area itself.
+create table if not exists service_tasks (
+  id                text primary key,
+  name              text not null,
+  task_type         text not null check (
+                      task_type in ('installation','removal','inspection',
+                                    'fluid_service','programming','calibration','testing')
+                    ),
+  description       text not null default '',
+  min_hours         numeric(6,2) not null default 0,
+  max_hours         numeric(6,2) not null default 0,
+  access_group      text,                    -- wheels · underbody · engine_timing …
+  shared_access_key text,                    -- e.g. front-wheel-access
+  metadata          jsonb not null default '{}'
+);
+
+create index if not exists tasks_access_idx on service_tasks (access_group);
+create index if not exists tasks_shared_idx on service_tasks (shared_access_key);
+
+-- -------------------------------------------------------------- modification_tasks
+
+create table if not exists modification_tasks (
+  id               text primary key,
+  modification_id  text not null references modifications(id) on delete cascade,
+  task_id          text not null references service_tasks(id) on delete cascade,
+  requirement_type text not null default 'required' check (
+                     requirement_type in ('required','conditional','optional')
+                   ),
+  condition        jsonb,
+  unique(modification_id, task_id)
+);
+
+create index if not exists mod_tasks_mod_idx  on modification_tasks (modification_id);
+create index if not exists mod_tasks_task_idx on modification_tasks (task_id);
+
+-- ---------------------------------------------------------------- task_dependencies
+
+-- The scheduling DAG. A leak test cannot run before the exhaust is bolted on; two jobs
+-- with no edge between them can run at the same time. Elapsed time is the longest path
+-- through this graph, which is why it is shorter than the sum of the labour.
+create table if not exists task_dependencies (
+  id                 text primary key,
+  task_id            text not null references service_tasks(id) on delete cascade,
+  depends_on_task_id text not null references service_tasks(id) on delete cascade,
+  relationship_type  text not null default 'finish_before' check (
+                       relationship_type in ('finish_before','start_after','same_stage')
+                     ),
+  unique(task_id, depends_on_task_id, relationship_type)
+);
+
+create index if not exists task_deps_task_idx on task_dependencies (task_id);
+create index if not exists task_deps_dep_idx  on task_dependencies (depends_on_task_id);
+
+-- ------------------------------------------------------------- build_estimate_runs
+
+-- Legacy run-storage shape retained for database compatibility. The current agentic
+-- /ai/compare endpoint returns CompareResult directly and does not populate this table.
+create table if not exists build_estimate_runs (
+  id             text primary key,
+  car_id         text not null references cars(id) on delete cascade,
+  from_node_id   text not null references nodes(id) on delete cascade,
+  to_node_id     text not null references nodes(id) on delete cascade,
+  guide_name     text not null,
+  summary        text not null default '',
+  cost           jsonb not null default '{}',
+  time           jsonb not null default '{}',
+  modifications  jsonb not null default '[]',
+  items          jsonb not null default '[]',
+  dependencies   jsonb not null default '[]',
+  tasks          jsonb not null default '[]',
+  stages         jsonb not null default '[]',
+  ai_explanation text not null default '',
+  metadata       jsonb not null default '{}',
+  created_at     timestamptz not null default now()
+);
+
+create index if not exists estimate_runs_car_idx  on build_estimate_runs (car_id, created_at desc);
+create index if not exists estimate_runs_pair_idx on build_estimate_runs (from_node_id, to_node_id, created_at desc);
 
 -- --------------------------------------------------------------------------- stats
 
@@ -170,6 +386,22 @@ create policy "public read cars"    on cars    for select using (true);
 create policy "public read nodes"   on nodes   for select using (true);
 create policy "public read posts"   on posts   for select using (true);
 create policy "public read replies" on replies for select using (true);
+
+-- Reference tables get the same read policy. Writes still require the service key, which
+-- prevents visitors from editing catalogue prices.
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'part_prices', 'modifications', 'node_modifications', 'modification_parts',
+    'modification_dependencies', 'service_tasks', 'modification_tasks',
+    'task_dependencies', 'build_estimate_runs'
+  ] loop
+    execute format('alter table %I enable row level security', t);
+    execute format('drop policy if exists "public read %s" on %I', t, t);
+    execute format('create policy "public read %s" on %I for select using (true)', t, t);
+  end loop;
+end $$;
 
 -- ------------------------------------------------------------------------- storage
 
