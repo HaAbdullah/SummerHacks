@@ -35,7 +35,12 @@ create table if not exists nodes (
   id           text primary key,
   car_id       text not null references cars(id) on delete cascade,
   title        text not null,
-  parent_ids   text[] not null default '{}', -- 0 = root, 1 = fork, 2 = merge
+  -- 0 entries = root, 1 = fork, 2 = merge.
+  -- Note: foreign keys cannot be enforced inside an array, so Postgres will NOT stop a
+  -- node pointing at a parent that no longer exists. Nothing deletes nodes today, so
+  -- this is theoretical — but if node deletion is ever added, either clean up children
+  -- in the same transaction or move edges to a node_parents(child_id, parent_id) table.
+  parent_ids   text[] not null default '{}',
   attributes   text[] not null default '{}', -- derived from mods; drives the filter panel
   mods         jsonb  not null default '{"engine":"","exhaust":"","wheels":"","brakes":""}',
   summary      text   not null default '',
