@@ -54,6 +54,18 @@ def calculate_mod_changes(node_a: dict, node_b: dict) -> list[dict]:
     return changes
 
 
+def split_mod_names(mod_name: str | None) -> list[str]:
+    """Split a slot value into exact catalogue part names.
+
+    A slot may hold one part or several comma-separated exact names. Empty segments are
+    ignored. Matching stays exact — never fuzzy.
+    """
+    normalized = normalize_mod(mod_name)
+    if normalized is None:
+        return []
+    return [segment.strip() for segment in normalized.split(",") if segment.strip()]
+
+
 def get_mod_details(
     catalogue: dict,
     car_id: str,
@@ -69,6 +81,37 @@ def get_mod_details(
         if part.get("name") == normalized_name:
             return part
     return None
+
+
+def _price_mod_value(
+    catalogue: dict,
+    car_id: str,
+    mod_key: str,
+    mod_name: str | None,
+) -> tuple[float, list[str]]:
+    """Exact-match price a slot value, summing comma-separated catalogue names."""
+    normalized = normalize_mod(mod_name)
+    if normalized is None:
+        return 0.0, []
+
+    # Prefer a single exact match for the whole slot before treating commas as separators.
+    whole = get_mod_details(catalogue, car_id, mod_key, normalized)
+    if whole is not None and whole.get("price") is not None:
+        return float(whole["price"]), []
+
+    names = split_mod_names(normalized)
+    if len(names) <= 1:
+        return 0.0, [normalized]
+
+    total = 0.0
+    unresolved: list[str] = []
+    for name in names:
+        part = get_mod_details(catalogue, car_id, mod_key, name)
+        if part is None or part.get("price") is None:
+            unresolved.append(name)
+        else:
+            total += float(part["price"])
+    return total, unresolved
 
 
 def add_mod(working_node: dict, target_node: dict, mod_key: ModKey) -> dict:
@@ -129,20 +172,18 @@ def calculate_costs(operations: list[dict], catalogue: dict, car_id: str) -> dic
         kind = operation["operation"]
 
         if kind in ("add", "replace"):
-            added_name = operation["added"]
-            part = get_mod_details(catalogue, car_id, mod_key, added_name)
-            if part is None or part.get("price") is None:
-                unresolved_added.append(added_name)
-            else:
-                new_parts_cost += float(part["price"])
+            amount, missing = _price_mod_value(
+                catalogue, car_id, mod_key, operation["added"]
+            )
+            new_parts_cost += amount
+            unresolved_added.extend(missing)
 
         if kind in ("remove", "replace"):
-            removed_name = operation["removed"]
-            part = get_mod_details(catalogue, car_id, mod_key, removed_name)
-            if part is None or part.get("price") is None:
-                unresolved_removed.append(removed_name)
-            else:
-                removed_parts_value += float(part["price"])
+            amount, missing = _price_mod_value(
+                catalogue, car_id, mod_key, operation["removed"]
+            )
+            removed_parts_value += amount
+            unresolved_removed.extend(missing)
 
     return {
         "new_parts_cost": round(new_parts_cost, 2),

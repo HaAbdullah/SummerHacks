@@ -633,6 +633,10 @@ target values, perform exact-name catalogue lookups, calculate all arithmetic, a
 validate completion. The model's final prose is discarded. Missing catalogue names are
 reported in `unresolved_*_parts`; prices are never fuzzy-matched or estimated.
 
+A mod slot may contain several comma-separated exact catalogue names. Pricing first
+checks whether the whole slot is one exact catalogue name; otherwise it sums each exact
+segment and reports only unmatched segments as unresolved.
+
 The route returns `400` for different cars, `503` when `AI_API_KEY` is absent, and `502`
 when the agent stops without a valid tool-produced result.
 

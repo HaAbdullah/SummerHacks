@@ -221,7 +221,7 @@ The compare endpoint is intentionally stricter:
 - Nodes must be for the same `car_id`, or the route returns `400`.
 - `AI_API_KEY` is required for `/ai/compare`, or it returns `503`.
 - LangChain may choose tools, but app code determines changes, operations, prices, and validation.
-- Part prices are exact-name matches only. Never fuzzy-match or estimate prices in `compare_tools.py`.
+- Part prices are exact-name matches only. A slot may contain comma-separated exact catalogue names; pricing prefers an exact whole-slot match, then sums exact segment matches. Never fuzzy-match or estimate prices in `compare_tools.py`.
 - The model's final prose is discarded; the API returns a deterministic `CompareResult`.
 
 The transition build-guide endpoint keeps a similar deterministic boundary:
