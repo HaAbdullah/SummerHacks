@@ -240,6 +240,44 @@ export interface CompareResult {
   matches_target: boolean;
 }
 
+/* --- POST /api/ai/build-guide --------------------------------------------- */
+
+export type BuildGuideAction = "add" | "replace" | "remove" | "modify";
+
+export interface TransitionBuildGuidePart {
+  name: string;
+  category: CompareModKey;
+  action: BuildGuideAction;
+  replaces?: string | null;
+}
+
+export interface TransitionBuildGuideStep {
+  instruction: string;
+  details?: string | null;
+  evidence_ids: string[];
+  warnings: string[];
+}
+
+export interface TransitionBuildGuideStage {
+  order: number;
+  title: string;
+  components: string[];
+  steps: TransitionBuildGuideStep[];
+}
+
+export interface TransitionBuildGuide {
+  node_a_id: string;
+  node_b_id: string;
+  title: string;
+  summary: string;
+  required_changes: TransitionBuildGuidePart[];
+  stages: TransitionBuildGuideStage[];
+  community_tips: { text: string; evidence_ids: string[] }[];
+  dependencies: string[];
+  warnings: string[];
+  unknowns: { description: string }[];
+}
+
 export interface PulseData {
   totalNodes: number;
   contributions24h: number;

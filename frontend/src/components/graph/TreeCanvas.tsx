@@ -12,9 +12,13 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { motion } from "framer-motion";
-import { getGraph, createBranch } from "@/lib/api";
+import { createBranch, generateTransitionBuildGuide, getGraph } from "@/lib/api";
 import { compareNodes, toCompareNode } from "@/lib/api/compare";
-import type { BuildNodeData, CompareResult } from "@/lib/types";
+import type {
+  BuildNodeData,
+  CompareResult,
+  TransitionBuildGuide,
+} from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import {
   filterMatchingIds,
@@ -26,6 +30,7 @@ import { BuildNode, type BuildFlowNode } from "./BuildNode";
 import { BranchEdge, type BranchFlowEdge } from "./BranchEdge";
 import { AddBranchModal } from "./AddBranchModal";
 import { CompareResultPanel } from "./CompareResultPanel";
+import { BuildGuidePanel } from "./BuildGuidePanel";
 
 const nodeTypes = { build: BuildNode };
 const edgeTypes = { branch: BranchEdge };
@@ -45,6 +50,9 @@ function CanvasInner({
   const [compareResult, setCompareResult] = useState<CompareResult | null>(null);
   const [compareBusy, setCompareBusy] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
+  const [buildGuide, setBuildGuide] = useState<TransitionBuildGuide | null>(null);
+  const [guideBusy, setGuideBusy] = useState(false);
+  const [guideError, setGuideError] = useState<string | null>(null);
   const entered = useRef(false);
   const navigating = useRef(false);
   const { fitView, setCenter, getZoom, zoomIn, zoomOut } = useReactFlow();
@@ -340,6 +348,8 @@ function CanvasInner({
         });
         setCompareResult(null);
         setCompareError(null);
+        setBuildGuide(null);
+        setGuideError(null);
         return;
       }
       if (mergeMode) {
@@ -349,6 +359,8 @@ function CanvasInner({
       setCompareSelection([]);
       setCompareResult(null);
       setCompareError(null);
+      setBuildGuide(null);
+      setGuideError(null);
       void openNode(node.id);
     },
     [mergeMode, toggleMergeSelection, openNode],
@@ -363,6 +375,8 @@ function CanvasInner({
     setCompareBusy(true);
     setCompareError(null);
     setCompareResult(null);
+    setBuildGuide(null);
+    setGuideError(null);
     try {
       setCompareResult(
         await compareNodes(toCompareNode(base), toCompareNode(target)),
@@ -373,6 +387,29 @@ function CanvasInner({
       );
     } finally {
       setCompareBusy(false);
+    }
+  };
+
+  const runBuildGuide = async () => {
+    if (compareSelection.length !== 2 || guideBusy) return;
+    const base = buildNodes.find((node) => node.id === compareSelection[0]);
+    const target = buildNodes.find((node) => node.id === compareSelection[1]);
+    if (!base || !target) return;
+
+    setGuideBusy(true);
+    setGuideError(null);
+    setBuildGuide(null);
+    try {
+      setBuildGuide(
+        await generateTransitionBuildGuide(base.id, target.id),
+      );
+      setCompareResult(null);
+    } catch (error) {
+      setGuideError(
+        error instanceof Error ? error.message : "Build guide generation failed",
+      );
+    } finally {
+      setGuideBusy(false);
     }
   };
 
@@ -399,6 +436,8 @@ function CanvasInner({
     setCompareSelection([]);
     setCompareResult(null);
     setCompareError(null);
+    setBuildGuide(null);
+    setGuideError(null);
   }, []);
 
   useEffect(() => {
@@ -466,7 +505,11 @@ function CanvasInner({
       {/* top-right; shift left when compare panel is open so controls stay clickable */}
       <div
         className={`absolute top-3 z-20 flex flex-wrap items-center justify-end gap-1.5 transition-[right] duration-200 ${
-          compareResult ? "right-[410px]" : "right-3"
+          buildGuide
+            ? "right-[470px]"
+            : compareResult
+              ? "right-[410px]"
+              : "right-3"
         }`}
       >
         <button
@@ -484,6 +527,15 @@ function CanvasInner({
           title="Shift-click two nodes, then compare"
         >
           {compareBusy ? "Comparing…" : "Compare"}
+        </button>
+        <button
+          type="button"
+          onClick={runBuildGuide}
+          disabled={compareSelection.length !== 2 || guideBusy}
+          className="btn btn-secondary focus-ring disabled:cursor-not-allowed disabled:opacity-45"
+          title="Shift-click a starting node and target node, then build a guide"
+        >
+          {guideBusy ? "Building guide..." : "Build Guide"}
         </button>
         {compareSelection.length < 2 && (
           <span className="rounded-[var(--radius-sm)] border border-line bg-surface px-2.5 py-1.5 text-[12px] text-muted">
@@ -526,6 +578,12 @@ function CanvasInner({
         </div>
       )}
 
+      {guideError && (
+        <div className="absolute right-3 top-14 z-30 max-w-[450px] rounded-xl border border-red-500/25 bg-red-950/90 px-4 py-3 text-[12px] text-red-100 shadow-xl">
+          {guideError}
+        </div>
+      )}
+
       {compareResult &&
         (() => {
           const base = buildNodes.find(
@@ -540,6 +598,26 @@ function CanvasInner({
               target={target}
               result={compareResult}
               onClose={() => setCompareResult(null)}
+              onGenerateGuide={() => void runBuildGuide()}
+              guideBusy={guideBusy}
+            />
+          ) : null;
+        })()}
+
+      {buildGuide &&
+        (() => {
+          const base = buildNodes.find(
+            (node) => node.id === buildGuide.node_a_id,
+          );
+          const target = buildNodes.find(
+            (node) => node.id === buildGuide.node_b_id,
+          );
+          return base && target ? (
+            <BuildGuidePanel
+              base={base}
+              target={target}
+              guide={buildGuide}
+              onClose={() => setBuildGuide(null)}
             />
           ) : null;
         })()}
@@ -586,7 +664,11 @@ function CanvasInner({
 
       <div
         className={`absolute bottom-3 z-20 flex items-center gap-0.5 rounded-[var(--radius)] border border-line bg-surface p-0.5 shadow-[var(--shadow-sm)] transition-[right] duration-200 ${
-          compareResult ? "right-[410px]" : "right-3"
+          buildGuide
+            ? "right-[470px]"
+            : compareResult
+              ? "right-[410px]"
+              : "right-3"
         }`}
       >
         <button

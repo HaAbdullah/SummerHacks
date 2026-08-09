@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     ai_model: str = "gpt-4o-mini"
     ai_timeout_seconds: float = 20.0
     compare_agent_recursion_limit: int = 20
+    build_guide_evidence_confidence_threshold: float = Field(
+        default=0.80, ge=0, le=1
+    )
 
     # Engine-image blueprint workflow. Gemini owns visual understanding; these values
     # stay separate from the OpenAI-compatible chat/compare configuration above.

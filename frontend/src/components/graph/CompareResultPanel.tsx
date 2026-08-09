@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, X } from "lucide-react";
+import { AlertTriangle, BookOpen, Check, LoaderCircle, X } from "lucide-react";
 import type { BuildNodeData, CompareResult } from "@/lib/types";
 
 const money = new Intl.NumberFormat("en-US", {
@@ -13,11 +13,15 @@ export function CompareResultPanel({
   target,
   result,
   onClose,
+  onGenerateGuide,
+  guideBusy = false,
 }: {
   base: BuildNodeData;
   target: BuildNodeData;
   result: CompareResult;
   onClose: () => void;
+  onGenerateGuide?: () => void;
+  guideBusy?: boolean;
 }) {
   const changes = result.changes.filter(
     (change) => change.operation !== "unchanged",
@@ -121,6 +125,22 @@ export function CompareResultPanel({
         Deterministic validation{" "}
         {result.matches_target ? "matched the target" : "did not match"}
       </div>
+
+      {onGenerateGuide && (
+        <button
+          type="button"
+          onClick={onGenerateGuide}
+          disabled={guideBusy}
+          className="btn btn-primary focus-ring mt-4 w-full gap-1.5 disabled:opacity-50"
+        >
+          {guideBusy ? (
+            <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <BookOpen className="h-3.5 w-3.5" />
+          )}
+          {guideBusy ? "Generating guide" : "Generate build guide"}
+        </button>
+      )}
     </aside>
   );
 }

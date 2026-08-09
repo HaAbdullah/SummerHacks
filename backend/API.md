@@ -124,6 +124,7 @@ tag traces back to one slot (`engine-turbo`, `brakes-bbk`, `wheels-allterrain`).
 | GET | `/nodes/{nodeId}/chat/suggestions` | **getPromptSuggestions** — auto prompts from community notes |
 | GET | `/ai/build-mod/{nodeId}` | **getBuildModAI** (Ahmed) |
 | POST | `/ai/compare` | LangChain-orchestrated, deterministically validated node comparison |
+| POST | `/ai/build-guide` | Evidence-grounded build stages from a starting node to a target node |
 | POST | `/blueprints/engine/analyze` | Gemini engine detection + high-confidence component JSON |
 | POST | `/blueprints/engine/render` | Nano Banana/Pillow blueprint generation as downloadable JPEG |
 
@@ -132,6 +133,24 @@ never forget it. Opening a generation nobody has modded yet returns a graph with
 stock root, ready to build on.
 
 ---
+
+## POST `/ai/build-guide`
+
+Send node IDs in transition order. The backend loads both nodes, rejects cross-car
+transitions, computes the raw mod diff deterministically, gathers target-node posts and
+replies as evidence, and makes one structured model call to organize the guide.
+
+```json
+{
+  "node_a_id": "n-stock",
+  "node_b_id": "n-turbo-street"
+}
+```
+
+The response includes `required_changes`, ordered `stages`, evidence-grounded
+`community_tips`, `dependencies`, `warnings`, and `unknowns`. Fabricated evidence IDs
+are stripped before return. `AI_API_KEY` is required; missing configuration returns
+`503`.
 
 ## GET `/cars/toyota-corolla-e170/graph` — getDAG
 

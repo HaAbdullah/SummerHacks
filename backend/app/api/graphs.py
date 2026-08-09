@@ -10,6 +10,7 @@ from fastapi import APIRouter, Body, File, Form, HTTPException, Query, UploadFil
 
 from app.models.schemas import (
     AskAiRequest,
+    BuildGuideRequest,
     BuildModPayload,
     Car,
     ChatMessage,
@@ -26,11 +27,13 @@ from app.models.schemas import (
     PromptSuggestionsResponse,
     Reply,
     Stats,
+    TransitionBuildGuide,
 )
 from app.services import (
     agentic_compare,
     ai_service,
     analytics_service,
+    build_guide,
     chat_service,
     community_service,
     generations,
@@ -369,4 +372,19 @@ async def compare_nodes(req: CompareRequest) -> CompareResult:
     except agentic_compare.CompareConfigurationError as exc:
         raise HTTPException(503, str(exc)) from exc
     except agentic_compare.CompareWorkflowError as exc:
+        raise HTTPException(502, str(exc)) from exc
+
+
+@router.post("/ai/build-guide", response_model=TransitionBuildGuide, tags=["ai"])
+async def create_build_guide(req: BuildGuideRequest) -> TransitionBuildGuide:
+    """Synthesize how to move between two stored nodes using target-node evidence."""
+    try:
+        return await build_guide.create_build_guide(req.node_a_id, req.node_b_id)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except build_guide.BuildGuideConfigurationError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except build_guide.BuildGuideWorkflowError as exc:
         raise HTTPException(502, str(exc)) from exc
