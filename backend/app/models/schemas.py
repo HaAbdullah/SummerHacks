@@ -467,6 +467,91 @@ class CompareResult(BaseModel):
     matches_target: bool
 
 
+BuildGuideAction = Literal["add", "replace", "remove", "modify"]
+CommunityEvidenceType = Literal[
+    "note", "discussion", "voice", "image", "drawing", "blueprint", "video"
+]
+
+
+class BuildGuideRequest(BaseModel):
+    node_a_id: str
+    node_b_id: str
+
+
+class CommunityObservation(BaseModel):
+    subject: str
+    relationship: str
+    object: str
+    confidence: float = Field(ge=0, le=1)
+
+
+class CommunityEvidence(BaseModel):
+    id: str
+    type: CommunityEvidenceType
+    text: str | None = None
+    observations: list[CommunityObservation] = Field(default_factory=list)
+    author: str
+    created_at: str
+    source_url: str | None = None
+
+
+class BuildGuideContextNode(BaseModel):
+    id: str
+    title: str
+    summary: str = ""
+    mods: CompareNodeMods = Field(default_factory=CompareNodeMods)
+
+
+class BuildGuideContext(BaseModel):
+    starting_node: BuildGuideContextNode
+    target_node: BuildGuideContextNode
+    comparison: list[CompareChange]
+    community_context: list[CommunityEvidence] = Field(default_factory=list)
+
+
+class BuildGuidePart(BaseModel):
+    name: str
+    category: Literal["engine", "exhaust", "wheels", "brakes"]
+    action: BuildGuideAction
+    replaces: str | None = None
+
+
+class BuildGuideStep(BaseModel):
+    instruction: str
+    details: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class BuildGuideStage(BaseModel):
+    order: int = Field(ge=1)
+    title: str
+    components: list[str] = Field(default_factory=list)
+    steps: list[BuildGuideStep] = Field(default_factory=list)
+
+
+class CommunityTip(BaseModel):
+    text: str
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
+class BuildGuideUnknown(BaseModel):
+    description: str
+
+
+class TransitionBuildGuide(BaseModel):
+    node_a_id: str
+    node_b_id: str
+    title: str
+    summary: str
+    required_changes: list[BuildGuidePart] = Field(default_factory=list)
+    stages: list[BuildGuideStage] = Field(default_factory=list)
+    community_tips: list[CommunityTip] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    unknowns: list[BuildGuideUnknown] = Field(default_factory=list)
+
+
 class ChatMessage(BaseModel):
     """One line in the node AI chatbox — a user question or the AI's reply."""
 

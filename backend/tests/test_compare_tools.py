@@ -167,6 +167,38 @@ def test_missing_catalogue_price_is_unresolved_not_estimated():
     assert pricing["unresolved_added_parts"] == ["Unknown Wheels"]
 
 
+def test_calculate_costs_sums_comma_separated_exact_names():
+    catalogue = {
+        "test-car": {
+            "engine": [
+                {"name": "Intake", "price": 300},
+                {"name": "Tune", "price": 500},
+            ],
+            "exhaust": [],
+            "wheels": [],
+            "brakes": [],
+        }
+    }
+    operations = [
+        {
+            "operation": "add",
+            "mod_key": "engine",
+            "added": "Intake, Tune",
+        }
+    ]
+
+    pricing = compare_tools.calculate_costs(operations, catalogue, "test-car")
+
+    assert pricing == {
+        "new_parts_cost": 800.0,
+        "removed_parts_value": 0.0,
+        "build_value_difference": 800.0,
+        "pricing_complete": True,
+        "unresolved_added_parts": [],
+        "unresolved_removed_parts": [],
+    }
+
+
 def test_tool_registry_has_only_the_seven_capabilities():
     context = agentic_compare.CompareContext(
         node_a=node("a"),

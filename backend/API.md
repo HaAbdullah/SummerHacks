@@ -124,6 +124,7 @@ tag traces back to one slot (`engine-turbo`, `brakes-bbk`, `wheels-allterrain`).
 | GET | `/nodes/{nodeId}/chat/suggestions` | **getPromptSuggestions** — auto prompts from community notes |
 | GET | `/ai/build-mod/{nodeId}` | **getBuildModAI** (Ahmed) |
 | POST | `/ai/compare` | LangChain-orchestrated, deterministically validated node comparison |
+| POST | `/ai/build-guide` | Evidence-grounded build stages from a starting node to a target node |
 | POST | `/blueprints/engine/analyze` | Gemini engine detection + high-confidence component JSON |
 | POST | `/blueprints/engine/render` | Nano Banana/Pillow blueprint generation as downloadable JPEG |
 
@@ -132,6 +133,24 @@ never forget it. Opening a generation nobody has modded yet returns a graph with
 stock root, ready to build on.
 
 ---
+
+## POST `/ai/build-guide`
+
+Send node IDs in transition order. The backend loads both nodes, rejects cross-car
+transitions, computes the raw mod diff deterministically, gathers target-node posts and
+replies as evidence, and makes one structured model call to organize the guide.
+
+```json
+{
+  "node_a_id": "n-stock",
+  "node_b_id": "n-turbo-street"
+}
+```
+
+The response includes `required_changes`, ordered `stages`, evidence-grounded
+`community_tips`, `dependencies`, `warnings`, and `unknowns`. Fabricated evidence IDs
+are stripped before return. `AI_API_KEY` is required; missing configuration returns
+`503`.
 
 ## GET `/cars/toyota-corolla-e170/graph` — getDAG
 
@@ -613,6 +632,10 @@ LangChain only selects among seven request-scoped tools. The tools detect change
 target values, perform exact-name catalogue lookups, calculate all arithmetic, and
 validate completion. The model's final prose is discarded. Missing catalogue names are
 reported in `unresolved_*_parts`; prices are never fuzzy-matched or estimated.
+
+A mod slot may contain several comma-separated exact catalogue names. Pricing first
+checks whether the whole slot is one exact catalogue name; otherwise it sums each exact
+segment and reports only unmatched segments as unresolved.
 
 The route returns `400` for different cars, `503` when `AI_API_KEY` is absent, and `502`
 when the agent stops without a valid tool-produced result.

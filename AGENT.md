@@ -51,7 +51,8 @@ then `backend/.env` as an optional higher-precedence override.
 - `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`: switch storage to Supabase Postgres.
 - `SUPABASE_BUCKET`: storage bucket for community media, default `community-media`.
 - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`: optional durability layer for JSON storage.
-- `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`, `AI_TIMEOUT_SECONDS`: node chat and agentic compare model config.
+- `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`, `AI_TIMEOUT_SECONDS`: node chat, agentic compare, and transition build-guide model config.
+- `BUILD_GUIDE_EVIDENCE_CONFIDENCE_THRESHOLD`: minimum confidence for structured media observations included as guide evidence, default `0.80`.
 - `GEMINI_API_KEY`, `GEMINI_VISION_MODEL`: engine-image blueprint visual analysis.
 - `BLUEPRINT_COMPONENT_CONFIDENCE_THRESHOLD` and `BLUEPRINT_ENGINE_DETECTION_CONFIDENCE_THRESHOLD`: deterministic visibility gates.
 - `CORS_ORIGINS`: comma-separated frontend origins.
@@ -88,6 +89,9 @@ Important services:
 - `ai_service.py`: `/ai/build-mod/{nodeId}` payload assembly for build-guide workflows.
 - `agentic_compare.py`: LangChain orchestration for comparing supplied nodes.
 - `compare_tools.py`: deterministic truth for comparing slots, mutating working state, exact part pricing, and validation.
+- `build_guide.py`: retrieves a node pair, reuses deterministic comparison, invokes one structured synthesis call, and grounds the result.
+- `community_evidence.py`: normalizes target-node posts, replies, transcripts, captions, and available visual observations into stable evidence records.
+- `build_guide_prompts.py`: dedicated safety and evidence-grounding prompt for A-to-B guides.
 - `blueprint_workflow.py`: LangGraph sequencing for engine-image blueprint stages.
 - `engine_vision.py`: isolated Gemini multimodal structured-output integration.
 - `blueprint_prompts.py`: provider prompts for blueprint AI stages.
@@ -127,6 +131,7 @@ All app routes are under `/api`.
 - `GET /nodes/{nodeId}/chat/suggestions`.
 - `GET /ai/build-mod/{nodeId}`: structured build-guide payload.
 - `POST /ai/compare`: compare two complete supplied nodes.
+- `POST /ai/build-guide`: generate an evidence-grounded guide from `node_a_id` to `node_b_id`; the backend retrieves both nodes.
 - `POST /blueprints/engine/analyze`: classify an engine image and return high-confidence visible component JSON.
 - `POST /blueprints/engine/render`: accept the original image plus validated analysis JSON and return the composed `image/jpeg` blueprint artifact.
 
@@ -196,8 +201,9 @@ Important component areas:
 API layer:
 
 - `frontend/src/lib/api/backend.ts` is the raw FastAPI client.
-- `frontend/src/lib/api/index.ts` exposes app-facing functions. Some remain client-side mocks backed by live data, notably heuristic AI search and build-guide generation.
+- `frontend/src/lib/api/index.ts` exposes app-facing functions. Heuristic AI search and the legacy single-node build guide remain client-side mocks backed by live data; A-to-B guides are real API calls.
 - `frontend/src/lib/api/compare.ts` handles `/ai/compare` conversion and error handling.
+- `frontend/src/lib/api/build-guide.ts` sends two selected node IDs to `/ai/build-guide` and handles API failures.
 
 State/helpers:
 
@@ -215,8 +221,18 @@ The compare endpoint is intentionally stricter:
 - Nodes must be for the same `car_id`, or the route returns `400`.
 - `AI_API_KEY` is required for `/ai/compare`, or it returns `503`.
 - LangChain may choose tools, but app code determines changes, operations, prices, and validation.
-- Part prices are exact-name matches only. Never fuzzy-match or estimate prices in `compare_tools.py`.
+- Part prices are exact-name matches only. A slot may contain comma-separated exact catalogue names; pricing prefers an exact whole-slot match, then sums exact segment matches. Never fuzzy-match or estimate prices in `compare_tools.py`.
 - The model's final prose is discarded; the API returns a deterministic `CompareResult`.
+
+The transition build-guide endpoint keeps a similar deterministic boundary:
+
+- The caller sends only `node_a_id` and `node_b_id`; the backend owns node and evidence retrieval.
+- Both nodes must exist and belong to the same car.
+- `compare_tools.calculate_mod_changes` determines required add, replace, and remove operations. The model never determines the raw diff.
+- Only target-node posts, replies, captions, transcripts, and sufficiently confident structured observations may support community claims.
+- The workflow makes one LangChain structured-output call to organize stages, dependencies, warnings, and unknowns.
+- Application code replaces model-proposed required changes, strips fabricated evidence IDs, and drops ungrounded community tips before returning `TransitionBuildGuide`.
+- In the graph UI, shift-click the starting node first and the target node second, then choose `Build Guide` or generate one from the comparison panel.
 
 Engine blueprint analysis is a separate Gemini/LangGraph workflow. Analysis runs
 `inspect_input_image -> analyze_engine`, with a conditional stop for invalid or

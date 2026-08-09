@@ -5,11 +5,9 @@
  * node AI chatbox are real — backed by the FastAPI service in `backend/` via
  * `./backend`.
  *
- * AI search and build-guide generation stay mocked client-side: the backend
- * only exposes structured data for those (`/ai/compare`, `/ai/build-mod`),
- * not an actual generation call. Each mocked function below reads *live*
- * graph/node data instead of static fixtures, so it still behaves sensibly
- * against the real backend.
+ * AI search and the legacy single-node build guide stay mocked client-side.
+ * Two-node transition guides use the real `/ai/build-guide` workflow. Each
+ * mocked function below still reads live graph/node data instead of fixtures.
  */
 
 import type {
@@ -33,6 +31,10 @@ import * as backend from "./backend";
 import { buildGuideTemplates, type GuideTier } from "./seed";
 
 export { CompareError, compareNodes, toCompareNode } from "./compare";
+export {
+  BuildGuideError,
+  generateTransitionBuildGuide,
+} from "./build-guide";
 
 export async function analyzeEngineImage(
   image: File,

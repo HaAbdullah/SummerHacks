@@ -19,9 +19,21 @@ from __future__ import annotations
 
 # --- Toyota Corolla E170 ------------------------------------------------------------
 
-COROLLA_NA = "Cold air intake, 4-2-1 header, ECU tune"
-COROLLA_TURBO = "2ZR-FE, Garrett GT2860 turbo, 8psi, front-mount intercooler"
-COROLLA_BUILT = "Built bottom end, forged rods and pistons, GT3071R at 18psi"
+# Slot values must be exact catalogue part names (comma-separated when a slot
+# holds more than one priced item) so POST /ai/compare can resolve prices.
+COROLLA_NA = "Injen SP Cold Air Intake, DC Sports 4-2-1 Ceramic Header, EcuTek ECU Tune"
+COROLLA_TURBO = "Garrett GT2860RS Turbo Kit, Mishimoto Front-Mount Intercooler Kit, EcuTek ECU Tune"
+COROLLA_BUILT = "Brian Crower Forged Rod & Piston Kit, Garrett GT3071R Turbo, EcuTek ECU Tune"
+COROLLA_EX_NA = "TRD Resonated Cat-Back Exhaust"
+COROLLA_EX_TURBO = "Remark 3in Catless Downpipe, Remark 3in Cat-Back Exhaust"
+COROLLA_EX_BUILT = "Tomei Expreme Ti Turbo-Back"
+COROLLA_EX_CLEARANCE = "Tomei High-Clearance Turbo-Back"
+COROLLA_WH_STREET = "Konig Dekagram 17x8 +40"
+COROLLA_WH_TRACK = "Enkei RPF1 17x9 +45"
+COROLLA_WH_GRAVEL = "Method Race Wheels MR502 16x7"
+COROLLA_BR_STREET = "StopTech Street Pads and Stainless Lines"
+COROLLA_BR_TRACK = "Wilwood 4-Piston Front Brake Kit 320mm"
+COROLLA_BR_RALLY = "Rally Pads with Hydraulic Handbrake Kit"
 
 COROLLA = {
     "id": "toyota-corolla-e170",
@@ -43,61 +55,59 @@ COROLLA = {
         ("c-na-quiet", "NA · Resonated", ["c-na"],
          "Fully resonated. Power without the drone on a long commute.",
          "abdullah", 560, 0.50,
-         {"engine": COROLLA_NA, "exhaust": "Fully resonated catback, stock tips"}),
+         {"engine": COROLLA_NA, "exhaust": COROLLA_EX_NA}),
         ("c-turbo-3in", "Turbo · 3in Catback", ["c-turbo"],
          "3in downpipe and catback. Loud under load, civil at cruise.",
          "ahmed", 540, 0.78,
-         {"engine": COROLLA_TURBO, "exhaust": "3in downpipe, catless, 3in catback"}),
+         {"engine": COROLLA_TURBO, "exhaust": COROLLA_EX_TURBO}),
         ("c-built-straight", "Built · Straight Through", ["c-built"],
          "3.5in turbo-back, no silencing. Track use only.",
          "ahmed", 520, 0.80,
-         {"engine": COROLLA_BUILT, "exhaust": "3.5in turbo-back, straight through"}),
+         {"engine": COROLLA_BUILT, "exhaust": COROLLA_EX_BUILT}),
         ("c-built-clearance", "Built · High Clearance", ["c-built"],
          "3.5in routed high for stage use. Survives ruts.",
          "shoaib", 500, 0.70,
-         {"engine": COROLLA_BUILT, "exhaust": "3.5in high-clearance turbo-back"}),
+         {"engine": COROLLA_BUILT, "exhaust": COROLLA_EX_CLEARANCE}),
 
         ("c-turbo-street", "Turbo · Street Wheels", ["c-turbo-3in"],
          "17in cast on a road tyre. Daily proportions.",
          "abdullah", 460, 0.55,
-         {"engine": COROLLA_TURBO, "exhaust": "3in downpipe, catless, 3in catback",
-          "wheels": "17in cast, 215/45"}),
+         {"engine": COROLLA_TURBO, "exhaust": COROLLA_EX_TURBO,
+          "wheels": COROLLA_WH_STREET}),
         ("c-built-track", "Built · Track Wheels", ["c-built-straight"],
          "17in forged on semi-slicks. Unsprung weight over looks.",
          "ahmed", 440, 0.82,
-         {"engine": COROLLA_BUILT, "exhaust": "3.5in turbo-back, straight through",
-          "wheels": "17in lightweight forged, 235/40 semi-slick"}),
+         {"engine": COROLLA_BUILT, "exhaust": COROLLA_EX_BUILT,
+          "wheels": COROLLA_WH_TRACK}),
         ("c-built-gravel", "Built · Gravel Wheels", ["c-built-clearance"],
          "16in steel on all-terrain. Sidewall is the whole point.",
          "kshitij", 420, 0.75,
-         {"engine": COROLLA_BUILT, "exhaust": "3.5in high-clearance turbo-back",
-          "wheels": "16in gravel-spec, 215/65 all-terrain"}),
+         {"engine": COROLLA_BUILT, "exhaust": COROLLA_EX_CLEARANCE,
+          "wheels": COROLLA_WH_GRAVEL}),
 
         ("c-turbo-daily", "Turbo Daily", ["c-turbo-street"],
          "OEM+ pads and stainless lines. Finished street car.",
          "abdullah", 380, 0.60,
-         {"engine": COROLLA_TURBO, "exhaust": "3in downpipe, catless, 3in catback",
-          "wheels": "17in cast, 215/45", "brakes": "OEM+ pads, stainless lines"}),
+         {"engine": COROLLA_TURBO, "exhaust": COROLLA_EX_TURBO,
+          "wheels": COROLLA_WH_STREET, "brakes": COROLLA_BR_STREET}),
         ("c-track-weapon", "Track Weapon", ["c-built-track"],
          "4-pot front on 320mm rotors. Survives a full session.",
          "ahmed", 300, 0.88,
-         {"engine": COROLLA_BUILT, "exhaust": "3.5in turbo-back, straight through",
-          "wheels": "17in lightweight forged, 235/40 semi-slick",
-          "brakes": "4-pot front calipers, 320mm rotors"}),
+         {"engine": COROLLA_BUILT, "exhaust": COROLLA_EX_BUILT,
+          "wheels": COROLLA_WH_TRACK, "brakes": COROLLA_BR_TRACK}),
         ("c-gravel-rally", "Gravel Rally", ["c-built-gravel"],
          "Rally pads and a hydraulic handbrake. Stops on loose surface.",
          "shoaib", 260, 0.80,
-         {"engine": COROLLA_BUILT, "exhaust": "3.5in high-clearance turbo-back",
-          "wheels": "16in gravel-spec, 215/65 all-terrain",
-          "brakes": "Vented front discs, rally pads, hydraulic handbrake"}),
+         {"engine": COROLLA_BUILT, "exhaust": COROLLA_EX_CLEARANCE,
+          "wheels": COROLLA_WH_GRAVEL, "brakes": COROLLA_BR_RALLY}),
 
         ("c-rally", "Turbo Rally Build", ["c-track-weapon", "c-gravel-rally"],
          "Fusion: track brakes on gravel wheels, detuned to 14psi for reliability.",
          "kshitij", 96, 0.95,
-         {"engine": "Built bottom end, forged rods and pistons, GT3071R at 14psi for reliability",
-          "exhaust": "3.5in high-clearance turbo-back",
-          "wheels": "16in gravel-spec, 215/65 all-terrain",
-          "brakes": "4-pot front, rally pads, hydraulic handbrake"}),
+         {"engine": COROLLA_BUILT,
+          "exhaust": COROLLA_EX_CLEARANCE,
+          "wheels": COROLLA_WH_GRAVEL,
+          "brakes": f"{COROLLA_BR_TRACK}, {COROLLA_BR_RALLY}"}),
     ],
     "posts": {
         "c-root": [
@@ -244,9 +254,17 @@ COROLLA = {
 
 # --- Honda Civic FC/FK (10th gen) ---------------------------------------------------
 
-CIVIC_15T = "L15B7 1.5T, intake, intercooler, Hondata FlashPro stage 1"
-CIVIC_SI = "K20C2 Si, tune, upgraded intercooler, 25psi"
-CIVIC_K24 = "K24 swap, Skunk2 cams, individual throttle bodies"
+CIVIC_15T = "PRL Motorsports High Volume Intake System, Mishimoto Performance Intercooler Kit, Hondata FlashPro (2016-2021 Civic 1.5T)"
+CIVIC_SI = "Mishimoto Performance Intercooler Kit, Hondata FlashPro (2016-2021 Civic 1.5T)"
+CIVIC_K24 = "Skunk2 Alpha Series Camshafts K24"
+CIVIC_EX_15T = "MagnaFlow Resonated Cat-Back"
+CIVIC_EX_SI = "PRL Motorsports Front Pipe (Catted), Borla S-Type Cat-Back Exhaust 140742"
+CIVIC_EX_K24 = "Skunk2 MegaPower RR Exhaust"
+CIVIC_WH_15T = "Konig Hypergram 18x8 +40"
+CIVIC_WH_SI = "Enkei RPF1 18x9.5 +38 5x114.3"
+CIVIC_WH_K24 = "Enkei RPF1 18x9.5 +38 5x114.3"
+CIVIC_BR_STREET = "StopTech Street Performance Pads (Front), Goodridge G-Stop Stainless Brake Line Kit"
+CIVIC_BR_TRACK = "StopTech 4-Piston BBK 330mm (Front), Hawk HP Plus Track Pads (Front)"
 
 CIVIC = {
     "id": "honda-civic-fc-fk-10th-gen",
@@ -267,52 +285,52 @@ CIVIC = {
         ("h-15t-quiet", "1.5T · Quiet Catback", ["h-15t"],
          "Resonated. The 1.5T drones badly otherwise.",
          "abdullah", 500, 0.62,
-         {"engine": CIVIC_15T, "exhaust": "Resonated catback, 2.5in, quiet tips"}),
+         {"engine": CIVIC_15T, "exhaust": CIVIC_EX_15T}),
         ("h-si-3in", "Si · 3in Turbo-Back", ["h-si"],
          "Downpipe and catback. Wakes the K20 up above 4000.",
          "ahmed", 480, 0.78,
-         {"engine": CIVIC_SI, "exhaust": "3in downpipe, high-flow cat, 3in catback"}),
+         {"engine": CIVIC_SI, "exhaust": CIVIC_EX_SI}),
         ("h-k24-header", "K24 · Header-Back", ["h-k24"],
          "4-1 header on an NA motor. All of it is above 5000rpm.",
          "shoaib", 460, 0.70,
-         {"engine": CIVIC_K24, "exhaust": "4-1 race header, 2.5in header-back"}),
+         {"engine": CIVIC_K24, "exhaust": CIVIC_EX_K24}),
 
         ("h-15t-18", "1.5T · 18in Street", ["h-15t-quiet"],
          "18in on a 235. Fills the arch without wrecking the ride.",
          "abdullah", 420, 0.60,
-         {"engine": CIVIC_15T, "exhaust": "Resonated catback, 2.5in, quiet tips",
-          "wheels": "18in flow-formed, 235/40"}),
+         {"engine": CIVIC_15T, "exhaust": CIVIC_EX_15T,
+          "wheels": CIVIC_WH_15T}),
         ("h-si-track", "Si · Track Wheels", ["h-si-3in"],
          "18in forged on 200TW. Same size, three kilos lighter.",
          "ahmed", 400, 0.84,
-         {"engine": CIVIC_SI, "exhaust": "3in downpipe, high-flow cat, 3in catback",
-          "wheels": "18in forged, 245/40 200TW"}),
+         {"engine": CIVIC_SI, "exhaust": CIVIC_EX_SI,
+          "wheels": CIVIC_WH_SI}),
         ("h-k24-light", "K24 · Lightweight 17s", ["h-k24-header"],
          "17s to keep the gearing usable on an NA motor.",
          "shoaib", 380, 0.68,
-         {"engine": CIVIC_K24, "exhaust": "4-1 race header, 2.5in header-back",
-          "wheels": "17in forged, 225/45"}),
+         {"engine": CIVIC_K24, "exhaust": CIVIC_EX_K24,
+          "wheels": CIVIC_WH_K24}),
 
         ("h-15t-street", "1.5T Street", ["h-15t-18"],
          "Pads and lines. A complete, quiet, quick daily.",
          "abdullah", 320, 0.66,
-         {"engine": CIVIC_15T, "exhaust": "Resonated catback, 2.5in, quiet tips",
-          "wheels": "18in flow-formed, 235/40",
-          "brakes": "Street performance pads, stainless lines"}),
+         {"engine": CIVIC_15T, "exhaust": CIVIC_EX_15T,
+          "wheels": CIVIC_WH_15T,
+          "brakes": CIVIC_BR_STREET}),
         ("h-si-bbk", "Si · Big Brakes", ["h-si-track"],
          "4-pot 330mm. The Si's weak point solved.",
          "ahmed", 280, 0.90,
-         {"engine": CIVIC_SI, "exhaust": "3in downpipe, high-flow cat, 3in catback",
-          "wheels": "18in forged, 245/40 200TW",
-          "brakes": "4-pot front, 330mm two-piece rotors, track pads"}),
+         {"engine": CIVIC_SI, "exhaust": CIVIC_EX_SI,
+          "wheels": CIVIC_WH_SI,
+          "brakes": CIVIC_BR_TRACK}),
 
         ("h-hybrid", "Si Chassis, K24 Heart", ["h-si-bbk", "h-k24-light"],
          "Fusion: the Si's brakes and wheels under a naturally aspirated K24.",
          "kshitij", 60, 0.92,
-         {"engine": "K24 swap, Skunk2 cams, individual throttle bodies, Si drivetrain",
-          "exhaust": "4-1 race header, 3in header-back",
-          "wheels": "18in forged, 245/40 200TW",
-          "brakes": "4-pot front, 330mm two-piece rotors, track pads"}),
+         {"engine": CIVIC_K24,
+          "exhaust": CIVIC_EX_K24,
+          "wheels": CIVIC_WH_SI,
+          "brakes": CIVIC_BR_TRACK}),
     ],
     "posts": {
         "h-root": [
@@ -456,9 +474,18 @@ CIVIC = {
 
 # --- Subaru WRX VA -------------------------------------------------------------------
 
-WRX_STAGE1 = "FA20DIT, Cobb stage 1 OTS map, 93 octane"
-WRX_STAGE2 = "FA20DIT, stage 2, upgraded TMIC, protune at 19psi"
-WRX_BIGTURBO = "FA20DIT, VF52 hybrid turbo, built short block, E85 protune"
+WRX_STAGE1 = "Cobb Accessport V3 AP3-SUB-004"
+WRX_STAGE2 = "Cobb Accessport V3 AP3-SUB-004, Mishimoto Performance Top-Mount Intercooler, Grimmspeed Top Mount Intercooler Y-Pipe"
+WRX_BIGTURBO = "IAG Street Series Short Block FA20, Cobb Accessport V3 AP3-SUB-004, Killer B Motorsport Oil Pickup"
+WRX_EX_STAGE1 = "Invidia Q300 Cat-Back Exhaust"
+WRX_EX_STAGE2 = "Invidia Catted Downpipe (VA WRX), Cobb Stainless Cat-Back Exhaust"
+WRX_EX_BIG = "Grimmspeed Catted J-Pipe, Cobb Stainless Cat-Back Exhaust"
+WRX_WH_STREET = "Sparco Terra 17x8 +48"
+WRX_WH_TRACK = "Enkei RPF1 17x9 +45 5x114.3"
+WRX_WH_GRAVEL = "Method Race Wheels MR502 15x7 (Gravel)"
+WRX_BR_STREET = "Hawk DTC-60 Endurance Pads (Front), Goodridge Stainless Brake Line Kit (VA)"
+WRX_BR_TRACK = "StopTech ST-60 6-Piston BBK 355mm (Front), Hawk DTC-60 Endurance Pads (Front)"
+WRX_BR_RALLY = "Carbotech XP12 Rally Pads (Front), Goodridge Stainless Brake Line Kit (VA)"
 
 WRX = {
     "id": "subaru-wrx-va",
@@ -479,53 +506,53 @@ WRX = {
         ("w-stage1-quiet", "Stage 1 · Quiet", ["w-stage1"],
          "Resonated catback. Keeps the rumble without the headache.",
          "abdullah", 440, 0.64,
-         {"engine": WRX_STAGE1, "exhaust": "Resonated 3in catback, stock downpipe"}),
+         {"engine": WRX_STAGE1, "exhaust": WRX_EX_STAGE1}),
         ("w-stage2-tb", "Stage 2 · Turbo-Back", ["w-stage2"],
          "Catted downpipe and 3in back. The stage 2 map assumes this.",
          "ahmed", 420, 0.86,
-         {"engine": WRX_STAGE2, "exhaust": "3in catted downpipe, 3in turbo-back"}),
+         {"engine": WRX_STAGE2, "exhaust": WRX_EX_STAGE2}),
         ("w-big-open", "Big Turbo · Open Downpipe",
          ["w-bigturbo"],
          "Catless 3.5in. Loud enough to be a problem.",
          "kshitij", 400, 0.72,
-         {"engine": WRX_BIGTURBO, "exhaust": "3.5in catless downpipe, straight through"}),
+         {"engine": WRX_BIGTURBO, "exhaust": WRX_EX_BIG}),
 
         ("w-stage1-oem", "Stage 1 · OEM+ Wheels", ["w-stage1-quiet"],
          "18in on a 245. Stock look, better rubber.",
          "abdullah", 360, 0.60,
-         {"engine": WRX_STAGE1, "exhaust": "Resonated 3in catback, stock downpipe",
-          "wheels": "18in cast, 245/40 summer"}),
+         {"engine": WRX_STAGE1, "exhaust": WRX_EX_STAGE1,
+          "wheels": WRX_WH_STREET}),
         ("w-stage2-track", "Stage 2 · Track Wheels", ["w-stage2-tb"],
          "17in forged on 255 200TW. Smaller wheel, more tyre.",
          "ahmed", 340, 0.88,
-         {"engine": WRX_STAGE2, "exhaust": "3in catted downpipe, 3in turbo-back",
-          "wheels": "17in forged, 255/40 200TW"}),
+         {"engine": WRX_STAGE2, "exhaust": WRX_EX_STAGE2,
+          "wheels": WRX_WH_TRACK}),
         ("w-big-gravel", "Big Turbo · Gravel", ["w-big-open"],
          "15in gravel spec. The rally setup this car was designed around.",
          "shoaib", 320, 0.82,
-         {"engine": WRX_BIGTURBO, "exhaust": "3.5in catless downpipe, straight through",
-          "wheels": "15in gravel, 205/65 all-terrain"}),
+         {"engine": WRX_BIGTURBO, "exhaust": WRX_EX_BIG,
+          "wheels": WRX_WH_GRAVEL}),
 
         ("w-stage1-street", "Stage 1 Street", ["w-stage1-oem"],
          "Pads and lines. A quick, quiet, completely usable WRX.",
          "abdullah", 240, 0.68,
-         {"engine": WRX_STAGE1, "exhaust": "Resonated 3in catback, stock downpipe",
-          "wheels": "18in cast, 245/40 summer",
-          "brakes": "Street performance pads, stainless lines"}),
+         {"engine": WRX_STAGE1, "exhaust": WRX_EX_STAGE1,
+          "wheels": WRX_WH_STREET,
+          "brakes": WRX_BR_STREET}),
         ("w-stage2-bbk", "Stage 2 · Big Brakes", ["w-stage2-track"],
          "6-pot 355mm. The VA's brakes are its weakest link on track.",
          "ahmed", 200, 0.92,
-         {"engine": WRX_STAGE2, "exhaust": "3in catted downpipe, 3in turbo-back",
-          "wheels": "17in forged, 255/40 200TW",
-          "brakes": "6-pot front, 355mm rotors, endurance pads"}),
+         {"engine": WRX_STAGE2, "exhaust": WRX_EX_STAGE2,
+          "wheels": WRX_WH_TRACK,
+          "brakes": WRX_BR_TRACK}),
 
         ("w-stage-rally", "Gravel Stage Car", ["w-stage2-bbk", "w-big-gravel"],
          "Fusion: the track car's brake package on the gravel build.",
          "shoaib", 30, 0.94,
-         {"engine": "FA20DIT, VF52 hybrid turbo, built short block, E85, detuned for gravel",
-          "exhaust": "3.5in catless downpipe, straight through",
-          "wheels": "15in gravel, 205/65 all-terrain",
-          "brakes": "4-pot front, 320mm rotors, rally pads, hydraulic handbrake"}),
+         {"engine": WRX_BIGTURBO,
+          "exhaust": WRX_EX_BIG,
+          "wheels": WRX_WH_GRAVEL,
+          "brakes": WRX_BR_RALLY}),
     ],
     "posts": {
         "w-root": [

@@ -4,6 +4,48 @@
   "toyota-corolla-e170": {
     "engine": [
       {
+        "name": "Injen SP Cold Air Intake",
+        "price": 289.95,
+        "brand": "Injen",
+        "category": "intake"
+      },
+      {
+        "name": "DC Sports 4-2-1 Ceramic Header",
+        "price": 449.0,
+        "brand": "DC Sports",
+        "category": "header"
+      },
+      {
+        "name": "EcuTek ECU Tune",
+        "price": 499.0,
+        "brand": "EcuTek",
+        "category": "tune"
+      },
+      {
+        "name": "Garrett GT2860RS Turbo Kit",
+        "price": 1899.0,
+        "brand": "Garrett",
+        "category": "turbo"
+      },
+      {
+        "name": "Mishimoto Front-Mount Intercooler Kit",
+        "price": 699.95,
+        "brand": "Mishimoto",
+        "category": "intercooler"
+      },
+      {
+        "name": "Brian Crower Forged Rod & Piston Kit",
+        "price": 2149.0,
+        "brand": "Brian Crower",
+        "category": "internals"
+      },
+      {
+        "name": "Garrett GT3071R Turbo",
+        "price": 1599.0,
+        "brand": "Garrett",
+        "category": "turbo"
+      },
+      {
         "name": "Beck/Arnley VVT Solenoid 024-1950",
         "price": 83.41,
         "brand": "Beck/Arnley",
@@ -84,6 +126,36 @@
     ],
     "exhaust": [
       {
+        "name": "TRD Resonated Cat-Back Exhaust",
+        "price": 899.0,
+        "brand": "TRD",
+        "category": "catback"
+      },
+      {
+        "name": "Remark 3in Catless Downpipe",
+        "price": 379.0,
+        "brand": "Remark",
+        "category": "downpipe"
+      },
+      {
+        "name": "Remark 3in Cat-Back Exhaust",
+        "price": 649.0,
+        "brand": "Remark",
+        "category": "catback"
+      },
+      {
+        "name": "Tomei Expreme Ti Turbo-Back",
+        "price": 1899.0,
+        "brand": "Tomei",
+        "category": "turbo-back"
+      },
+      {
+        "name": "Tomei High-Clearance Turbo-Back",
+        "price": 1749.0,
+        "brand": "Tomei",
+        "category": "turbo-back"
+      },
+      {
         "name": "BRExhaust Direct-Fit Exhaust System (1.8L, 2012-2013)",
         "price": 227.0,
         "brand": "BRExhaust",
@@ -116,6 +188,24 @@
     ],
     "brakes": [
       {
+        "name": "StopTech Street Pads and Stainless Lines",
+        "price": 249.0,
+        "brand": "StopTech",
+        "category": "pads"
+      },
+      {
+        "name": "Wilwood 4-Piston Front Brake Kit 320mm",
+        "price": 1499.0,
+        "brand": "Wilwood",
+        "category": "bbk"
+      },
+      {
+        "name": "Rally Pads with Hydraulic Handbrake Kit",
+        "price": 899.0,
+        "brand": "AP Racing",
+        "category": "rally"
+      },
+      {
         "name": "Brembo Premium NAO Ceramic Pads, 17.5mm",
         "price": 71.35,
         "brand": "Brembo",
@@ -135,6 +225,24 @@
       }
     ],
     "wheels": [
+      {
+        "name": "Konig Dekagram 17x8 +40",
+        "price": 229.0,
+        "brand": "Konig",
+        "category": "wheel"
+      },
+      {
+        "name": "Enkei RPF1 17x9 +45",
+        "price": 339.0,
+        "brand": "Enkei",
+        "category": "wheel"
+      },
+      {
+        "name": "Method Race Wheels MR502 16x7",
+        "price": 218.0,
+        "brand": "Method",
+        "category": "wheel"
+      },
       {
         "name": "BORA 10mm Aluminum Wheel Spacer (5x100, 54.1mm, 12x1.5)",
         "price": 59.99,
@@ -294,6 +402,12 @@
         "price": 214.5,
         "brand": "PowerStop",
         "category": "rotors"
+      },
+      {
+        "name": "StopTech 4-Piston BBK 330mm (Front)",
+        "price": 2495.0,
+        "brand": "StopTech",
+        "category": "bbk"
       },
       {
         "name": "Motul RBF 600 Racing Brake Fluid 500ml",
