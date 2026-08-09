@@ -124,6 +124,8 @@ tag traces back to one slot (`engine-turbo`, `brakes-bbk`, `wheels-allterrain`).
 | GET | `/nodes/{nodeId}/chat/suggestions` | **getPromptSuggestions** — auto prompts from community notes |
 | GET | `/ai/build-mod/{nodeId}` | **getBuildModAI** (Ahmed) |
 | POST | `/ai/compare` | LangChain-orchestrated, deterministically validated node comparison |
+| POST | `/blueprints/engine/analyze` | Gemini engine detection + high-confidence component JSON |
+| POST | `/blueprints/engine/render` | Nano Banana/Pillow blueprint generation as downloadable JPEG |
 
 There is no `createDAG` to call — both graph routes create on miss, so the frontend can
 never forget it. Opening a generation nobody has modded yet returns a graph with just its
@@ -617,6 +619,59 @@ when the agent stops without a valid tool-produced result.
 
 ---
 
+## POST `/blueprints/engine/analyze`
+
+The Phase 3 engine-blueprint checkpoint accepts one multipart field named `image` as a
+JPEG, PNG, or WebP. A two-node LangGraph first distinguishes an installed engine bay,
+an isolated engine, or an invalid image. Valid engines proceed to component analysis;
+the application deterministically removes components below
+`BLUEPRINT_COMPONENT_CONFIDENCE_THRESHOLD` (default `0.80`).
+
+```bash
+curl -X POST http://localhost:8000/api/blueprints/engine/analyze \
+  -F "image=@engine-bay.jpg"
+```
+
+```json
+{
+  "success": true,
+  "image_context": {
+    "image_type": "ENGINE_BAY",
+    "engine_detected": true,
+    "engine_bbox": {"x1": 0.12, "y1": 0.18, "x2": 0.89, "y2": 0.91},
+    "confidence": 0.96
+  },
+  "analysis": {
+    "image_type": "ENGINE_BAY",
+    "engine_description": "Transverse inline engine installed in an engine bay.",
+    "engine_type": "inline four-cylinder layout",
+    "components": [
+      {
+        "id": "component_01",
+        "name": "valve cover",
+        "category": "engine_top",
+        "confidence": 0.94,
+        "description": "Large cover centered over the cylinder head.",
+        "bbox": {"x1": 0.35, "y1": 0.31, "x2": 0.67, "y2": 0.52},
+        "possible_modification": false,
+        "modification_description": null
+      }
+    ],
+    "observations": ["The engine is partially obscured by bodywork."]
+  },
+  "component_confidence_threshold": 0.8
+}
+```
+
+The endpoint returns `422` for unsupported/corrupt uploads or images without a
+confidently detected engine, `503` when `GEMINI_API_KEY` is absent, and `502` for a
+controlled provider/workflow failure. The structured response can be sent with the
+original image to `/blueprints/engine/render` as multipart fields `analysis_json` and
+`image`. That route generates engine-only schematic artwork, validates/retries it up to
+two attempts, composes it into `Blueprint.png` with Pillow, and returns `image/jpeg`.
+
+---
+
 ## Architecture
 
 ```
@@ -628,6 +683,9 @@ app/services/     business logic
     ai_service          build-payload assembly
     agentic_compare     LangChain tool-calling loop and request-scoped state
     compare_tools       change truth, mutations, pricing, validation
+    blueprint_workflow  LangGraph engine-image analysis workflow
+    engine_vision       isolated Gemini multimodal structured-output boundary
+    blueprint_prompts   prompts for blueprint AI stages
     chat_service        node AI chatbox — prompt assembly + suggestions, calls llm
     llm                 thin OpenAI chat-completion client (httpx, no SDK)
     parts               the catalogue browser

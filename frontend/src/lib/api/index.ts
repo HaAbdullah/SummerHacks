@@ -21,6 +21,7 @@ import type {
   Car,
   ChatMessage,
   EcosystemAnalytics,
+  EngineAnalysisResponse,
   MediaKind,
   Mods,
   Note,
@@ -32,6 +33,19 @@ import * as backend from "./backend";
 import { buildGuideTemplates, type GuideTier } from "./seed";
 
 export { CompareError, compareNodes, toCompareNode } from "./compare";
+
+export async function analyzeEngineImage(
+  image: File,
+): Promise<EngineAnalysisResponse> {
+  return backend.analyzeEngineImage(image);
+}
+
+export async function renderEngineBlueprint(
+  image: File,
+  analysis: EngineAnalysisResponse,
+): Promise<Blob> {
+  return backend.renderEngineBlueprint(image, analysis);
+}
 
 // Local-only mock store — node-level Community/AI chat has no backend yet.
 let chats: ChatMessage[] = [];

@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, model_validator
 
 MOD_SLOTS = ("engine", "exhaust", "wheels", "brakes")
 
@@ -293,6 +293,96 @@ class EcosystemAnalytics(BaseModel):
 
 
 # --- AI ----------------------------------------------------------------------------
+
+
+class BoundingBox(BaseModel):
+    """Normalized coordinates relative to the original uploaded image."""
+
+    x1: float = Field(ge=0, le=1)
+    y1: float = Field(ge=0, le=1)
+    x2: float = Field(ge=0, le=1)
+    y2: float = Field(ge=0, le=1)
+
+    @model_validator(mode="after")
+    def ordered_corners(self) -> "BoundingBox":
+        if self.x2 <= self.x1 or self.y2 <= self.y1:
+            raise ValueError("Bounding box lower-right must follow upper-left.")
+        return self
+
+
+class EngineImageContext(BaseModel):
+    image_type: Literal["ENGINE_BAY", "ISOLATED_ENGINE", "INVALID"]
+    engine_detected: bool
+    engine_bbox: BoundingBox | None = None
+    confidence: float = Field(ge=0, le=1)
+
+    @model_validator(mode="after")
+    def consistent_detection(self) -> "EngineImageContext":
+        valid_type = self.image_type != "INVALID"
+        if self.engine_detected != valid_type:
+            raise ValueError("Engine detection must agree with image_type.")
+        if self.engine_detected and self.engine_bbox is None:
+            raise ValueError("Detected engines require an engine_bbox.")
+        if not self.engine_detected and self.engine_bbox is not None:
+            raise ValueError("Invalid images cannot include an engine_bbox.")
+        return self
+
+
+class EngineComponent(BaseModel):
+    id: str
+    name: str
+    category: str
+    confidence: float = Field(ge=0, le=1)
+    description: str
+    bbox: BoundingBox
+    possible_modification: bool = False
+    modification_description: str | None = None
+
+    @model_validator(mode="after")
+    def modification_has_description(self) -> "EngineComponent":
+        if self.possible_modification and not (
+            self.modification_description or ""
+        ).strip():
+            raise ValueError("Flagged modifications require a description.")
+        if not self.possible_modification:
+            self.modification_description = None
+        return self
+
+
+class EngineAnalysis(BaseModel):
+    image_type: Literal["ENGINE_BAY", "ISOLATED_ENGINE"]
+    engine_description: str
+    engine_type: str | None = None
+    components: list[EngineComponent] = Field(default_factory=list)
+    observations: list[str] = Field(default_factory=list)
+
+
+class EngineAnalysisResponse(BaseModel):
+    """Structured engine understanding retained by the backend and inspection UI."""
+
+    success: Literal[True] = True
+    image_context: EngineImageContext
+    analysis: EngineAnalysis
+    component_confidence_threshold: float
+
+
+class BlueprintRenderPlan(BaseModel):
+    components_to_preserve: list[str] = Field(default_factory=list)
+    components_to_label: list[str] = Field(default_factory=list)
+    modifications_to_highlight: list[str] = Field(default_factory=list)
+    rendering_instructions: list[str] = Field(default_factory=list)
+
+
+class BlueprintValidation(BaseModel):
+    valid: bool
+    overall_score: float = Field(ge=0, le=1)
+    geometry_score: float = Field(ge=0, le=1)
+    component_score: float = Field(ge=0, le=1)
+    major_missing_components: list[str] = Field(default_factory=list)
+    obvious_hallucinations: list[str] = Field(default_factory=list)
+    correction_instructions: list[str] = Field(default_factory=list)
+
+
 CompareOperation = Literal["add", "remove", "replace", "unchanged"]
 CompareMutation = Literal["add", "remove", "replace"]
 

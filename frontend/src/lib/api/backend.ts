@@ -10,6 +10,7 @@ import type {
   CarParts,
   ChatMessage,
   EcosystemAnalytics,
+  EngineAnalysisResponse,
   Graph,
   Mods,
   Note,
@@ -47,6 +48,21 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
+}
+
+async function apiFetchBlob(path: string, init?: RequestInit): Promise<Blob> {
+  const res = await fetch(`${API}${path}`, init);
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      const body = await res.json();
+      detail = body?.detail ?? detail;
+    } catch {
+      /* body was not JSON */
+    }
+    throw new Error(`${res.status} ${path}: ${detail}`);
+  }
+  return res.blob();
 }
 
 export async function searchVehicles(
@@ -230,4 +246,30 @@ export async function getChatSuggestions(
     `/nodes/${encodeURIComponent(nodeId)}/chat/suggestions`,
   );
   return res.suggestions;
+}
+
+// --- engine blueprint analysis --------------------------------------------
+
+export async function analyzeEngineImage(
+  image: File,
+): Promise<EngineAnalysisResponse> {
+  const form = new FormData();
+  form.append("image", image);
+  return apiFetch("/blueprints/engine/analyze", {
+    method: "POST",
+    body: form,
+  });
+}
+
+export async function renderEngineBlueprint(
+  image: File,
+  analysis: EngineAnalysisResponse,
+): Promise<Blob> {
+  const form = new FormData();
+  form.append("image", image);
+  form.append("analysis_json", JSON.stringify(analysis));
+  return apiFetchBlob("/blueprints/engine/render", {
+    method: "POST",
+    body: form,
+  });
 }

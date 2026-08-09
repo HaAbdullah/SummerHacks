@@ -1,0 +1,124 @@
+{
+  "images": {
+    "54fbb64ceb3f2e6a35413b7022d21863f564836ffff23e16b951b99326f03113": "honda_turbo_inspection"
+  },
+  "fixtures": {
+    "honda_turbo_inspection": {
+      "success": true,
+      "image_context": {
+        "image_type": "ENGINE_BAY",
+        "engine_detected": true,
+        "engine_bbox": {
+          "x1": 0.08,
+          "y1": 0.25,
+          "x2": 0.92,
+          "y2": 0.9
+        },
+        "confidence": 0.99
+      },
+      "analysis": {
+        "image_type": "ENGINE_BAY",
+        "engine_description": "A clean, performance-oriented turbocharged inline engine bay with upgraded intake hardware and chassis bracing.",
+        "engine_type": "Turbocharged Inline-4",
+        "components": [
+          {
+            "id": "valve_cover_1",
+            "name": "Valve Cover",
+            "category": "Engine Component",
+            "confidence": 0.99,
+            "description": "Large branded engine cover centered over the cylinder head.",
+            "bbox": {"x1": 0.25, "y1": 0.35, "x2": 0.65, "y2": 0.55},
+            "possible_modification": false,
+            "modification_description": null
+          },
+          {
+            "id": "air_intake_housing_1",
+            "name": "Air Intake Housing",
+            "category": "Intake System",
+            "confidence": 0.98,
+            "description": "Large performance-style air intake housing on the right side of the engine bay.",
+            "bbox": {"x1": 0.65, "y1": 0.55, "x2": 0.9, "y2": 0.85},
+            "possible_modification": true,
+            "modification_description": "Aftermarket-style enclosed air intake housing."
+          },
+          {
+            "id": "intake_pipe_1",
+            "name": "Intake Pipe",
+            "category": "Intake System",
+            "confidence": 0.97,
+            "description": "Polished intake pipe connecting the intake housing to the forced-induction hardware.",
+            "bbox": {"x1": 0.45, "y1": 0.55, "x2": 0.7, "y2": 0.7},
+            "possible_modification": true,
+            "modification_description": "Aftermarket polished metal intake pipe."
+          },
+          {
+            "id": "turbocharger_1",
+            "name": "Turbocharger",
+            "category": "Forced Induction",
+            "confidence": 0.95,
+            "description": "Metal turbocharger housing visible below the intake pipe.",
+            "bbox": {"x1": 0.4, "y1": 0.6, "x2": 0.55, "y2": 0.75},
+            "possible_modification": false,
+            "modification_description": null
+          },
+          {
+            "id": "coolant_reservoir_1",
+            "name": "Coolant Reservoir",
+            "category": "Cooling System",
+            "confidence": 0.95,
+            "description": "Translucent coolant reservoir positioned at the left side of the bay.",
+            "bbox": {"x1": 0.15, "y1": 0.45, "x2": 0.25, "y2": 0.6},
+            "possible_modification": false,
+            "modification_description": null
+          },
+          {
+            "id": "strut_bar_1",
+            "name": "Strut Bar",
+            "category": "Chassis Component",
+            "confidence": 0.98,
+            "description": "Cross-bay strut tower brace spanning the upper engine compartment.",
+            "bbox": {"x1": 0.2, "y1": 0.28, "x2": 0.8, "y2": 0.35},
+            "possible_modification": true,
+            "modification_description": "Aftermarket strut tower brace."
+          },
+          {
+            "id": "battery_cover_1",
+            "name": "Battery Cover",
+            "category": "Electrical System",
+            "confidence": 0.9,
+            "description": "Protective battery housing with the positive terminal visible.",
+            "bbox": {"x1": 0.7, "y1": 0.4, "x2": 0.85, "y2": 0.55},
+            "possible_modification": false,
+            "modification_description": null
+          },
+          {
+            "id": "intercooler_piping_1",
+            "name": "Intercooler Piping",
+            "category": "Forced Induction",
+            "confidence": 0.85,
+            "description": "Charge-air piping visible near the turbocharger outlet.",
+            "bbox": {"x1": 0.55, "y1": 0.69, "x2": 0.65, "y2": 0.8},
+            "possible_modification": true,
+            "modification_description": "Performance-style charge-air piping."
+          },
+          {
+            "id": "exhaust_manifold_heat_shield_1",
+            "name": "Exhaust Manifold Heat Shield",
+            "category": "Exhaust System",
+            "confidence": 0.9,
+            "description": "Metal heat shield covering the exhaust manifold area below the turbocharger.",
+            "bbox": {"x1": 0.35, "y1": 0.65, "x2": 0.5, "y2": 0.8},
+            "possible_modification": false,
+            "modification_description": null
+          }
+        ],
+        "observations": [
+          "The engine bay is clean and well maintained.",
+          "Visible performance modifications include the intake system, charge piping, and chassis brace.",
+          "This payload is the stable Honda turbocharged inline-four demonstration fixture."
+        ]
+      },
+      "component_confidence_threshold": 0.8
+    }
+  }
+}
