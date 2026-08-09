@@ -1,0 +1,288 @@
+"""Vehicle lookup backed by NHTSA vPIC.
+
+vPIC is free, needs no key, and covers every vehicle sold in the US since 1981. Two of
+its traits drive this design:
+
+1. `getallmakes` returns ~12,300 makes (610KB), most of them trailer and RV
+   manufacturers. It is useless as a raw list, so it is fetched once at startup and
+   filtered in memory with real consumer brands ranked above the noise.
+2. Latency is inconsistent - multi-second responses are common. Nothing here may sit on
+   a per-keystroke path uncached.
+
+Every network call degrades instead of raising. If vPIC is unreachable the search box
+still returns something, because a third-party outage must not take the site down.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import re
+
+import httpx
+
+logger = logging.getLogger(__name__)
+
+VPIC_BASE = "https://vpic.nhtsa.dot.gov/api/vehicles"
+TIMEOUT = httpx.Timeout(8.0, connect=4.0)
+
+# vPIC covers 1981 onward.
+YEAR_RE = re.compile(r"\b(19[8-9]\d|20[0-2]\d)\b")
+
+# Ranked above vPIC's long tail of trailer and RV manufacturers.
+CONSUMER_BRANDS = (
+    "acura", "alfa romeo", "aston martin", "audi", "bentley", "bmw", "buick",
+    "cadillac", "chevrolet", "chrysler", "dodge", "ferrari", "fiat", "ford",
+    "genesis", "gmc", "honda", "hyundai", "infiniti", "jaguar", "jeep", "kia",
+    "lamborghini", "land rover", "lexus", "lincoln", "lotus", "maserati", "mazda",
+    "mclaren", "mercedes-benz", "mini", "mitsubishi", "nissan", "polestar",
+    "pontiac", "porsche", "ram", "rivian", "rolls-royce", "saab", "saturn",
+    "scion", "subaru", "suzuki", "tesla", "toyota", "volkswagen", "volvo",
+)
+
+# Makes whose name is two words. Checked before single tokens so "land rover" is not
+# matched as "land", leaving "rover" to look like a model.
+MULTIWORD_BRANDS = tuple(b for b in CONSUMER_BRANDS if " " in b or "-" in b)
+
+# Models for these are prefetched at startup so a bare "mustang" - no make typed - can
+# still be resolved. Searching all 12,300 makes per keystroke is not an option.
+PREFETCH_MAKES = (
+    "toyota", "honda", "ford", "chevrolet", "nissan", "subaru",
+    "mazda", "volkswagen", "bmw", "mercedes-benz", "hyundai", "kia",
+    "porsche", "audi", "lexus", "jeep", "dodge", "tesla",
+    "acura", "infiniti", "mitsubishi", "volvo", "cadillac", "gmc",
+)
+
+# What people type vs what vPIC calls it.
+MAKE_ALIASES = {
+    "chevy": "chevrolet",
+    "vw": "volkswagen",
+    "mercedes": "mercedes-benz",
+    "benz": "mercedes-benz",
+    "bimmer": "bmw",
+    "beemer": "bmw",
+}
+
+# vPIC lists the MX-5 without ever using the name "Miata", so a search for it finds
+# nothing at all unless we translate.
+MODEL_ALIASES = {
+    "miata": "mx-5",
+    "vette": "corvette",
+    "stang": "mustang",
+}
+
+# vPIC stores makes upper-case. Title-casing reads better, except for these.
+ACRONYM_BRANDS = {"bmw", "gmc", "mini", "ram", "kia"}
+
+_makes: list[str] = []
+_models: dict[str, list[str]] = {}
+
+
+def _pretty(make: str) -> str:
+    lowered = make.lower()
+    if lowered in ACRONYM_BRANDS:
+        return make.upper()
+    return make.title()
+
+
+# --- startup ---------------------------------------------------------------------
+
+async def warm_cache() -> None:
+    """Load the make list and the popular makes' models. Never fatal."""
+    global _makes
+    try:
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            resp = await client.get(f"{VPIC_BASE}/getallmakes", params={"format": "json"})
+            resp.raise_for_status()
+            results = resp.json().get("Results", [])
+        _makes = sorted({r["Make_Name"].strip() for r in results if r.get("Make_Name")})
+        logger.info("vPIC makes cached: %d", len(_makes))
+    except Exception as exc:  # noqa: BLE001 - degrading is the point
+        logger.warning("vPIC unreachable at startup (%s); using consumer brand list", exc)
+        _makes = sorted(b.title() for b in CONSUMER_BRANDS)
+
+    await asyncio.gather(*(_load_models(make) for make in PREFETCH_MAKES))
+    logger.info("model lists cached for %d makes", len(_models))
+
+
+async def _load_models(make: str) -> list[str]:
+    """Fetch and cache one make's models. Returns [] rather than raising."""
+    key = make.strip().lower()
+    if key in _models:
+        return _models[key]
+
+    try:
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            resp = await client.get(
+                f"{VPIC_BASE}/GetModelsForMake/{key}", params={"format": "json"}
+            )
+            resp.raise_for_status()
+            results = resp.json().get("Results", [])
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("vPIC model lookup failed for %s: %s", make, exc)
+        return []
+
+    models = sorted({r["Model_Name"].strip() for r in results if r.get("Model_Name")})
+    _models[key] = models
+    return models
+
+
+# --- query parsing ---------------------------------------------------------------
+
+def _split_year(query: str) -> tuple[int | None, str]:
+    """Pull the year out first - it is the one unambiguous token."""
+    match = YEAR_RE.search(query)
+    if not match:
+        return None, query.strip()
+    rest = (query[: match.start()] + " " + query[match.end() :]).strip()
+    return int(match.group(1)), rest
+
+
+def _split_make(text: str) -> tuple[str | None, str]:
+    """Find a make anywhere in the text. Returns (make, leftover)."""
+    lowered = text.lower().strip()
+    if not lowered:
+        return None, ""
+
+    for brand in MULTIWORD_BRANDS:
+        if brand in lowered:
+            return _pretty(brand), lowered.replace(brand, " ", 1).strip()
+
+    known = {m.lower(): m for m in (_makes or [b.title() for b in CONSUMER_BRANDS])}
+    tokens = [t for t in re.split(r"[\s,]+", lowered) if t]
+
+    def without(i: int) -> str:
+        return " ".join(tokens[:i] + tokens[i + 1 :])
+
+    # Pass 1: consumer brands only. Without this, "mustang" matches the make "Mustang
+    # Trailers" and the Ford Mustang is never found - same for "challenger" and "golf".
+    for i, token in enumerate(tokens):
+        if len(token) < 2:
+            continue
+        canonical = MAKE_ALIASES.get(token, token)
+        if canonical in CONSUMER_BRANDS:
+            return _pretty(known.get(canonical, canonical)), without(i)
+        matches = [b for b in CONSUMER_BRANDS if b.startswith(canonical)]
+        if matches:
+            best = min(matches, key=len)
+            return _pretty(known.get(best, best)), without(i)
+
+    # Pass 2: any make in vPIC, but only on an exact match, so a partial token can never
+    # be captured by an obscure trailer manufacturer.
+    for i, token in enumerate(tokens):
+        if len(token) >= 2 and token in known:
+            return _pretty(known[token]), without(i)
+
+    return None, lowered
+
+
+def _rank_models(models: list[str], needle: str) -> list[str]:
+    # vPIC model lists are littered with commercial and fleet entries like "'34" and
+    # "A8513". Anything not starting with a letter goes last, so a bare make query leads
+    # with cars people recognise.
+    # Browsing a whole make: alphabetical is what people expect. Fleet and commercial
+    # codes ("A8513", "'34") go last; the 4-digit floor keeps legitimately numeric names
+    # like BMW 335 and Mazda 626 out of it.
+    if not needle:
+        def is_junk(model: str) -> int:
+            if not model[:1].isalpha():
+                return 1
+            return 1 if re.fullmatch(r"[A-Za-z]{1,2}\d{3,}\w*", model) else 0
+
+        return sorted(models, key=lambda m: (is_junk(m), m.lower()))
+
+    return [m for _, m in sorted(_score(models, needle))]
+
+
+def _score(models: list[str], needle: str) -> list[tuple[tuple, str]]:
+    """(sort key, model) for every model matching `needle`. Sortable across makes."""
+    def is_junk(model: str) -> int:
+        if not model[:1].isalpha():
+            return 1
+        return 1 if re.fullmatch(r"[A-Za-z]{1,2}\d{3,}\w*", model) else 0
+
+    needle = MODEL_ALIASES.get(needle, needle)
+    parts = needle.split()
+
+    def tier(model: str) -> int | None:
+        m = model.lower()
+        if m.startswith(needle):
+            return 0
+        if needle in m:
+            return 1
+        if len(parts) > 1 and all(p in m for p in parts):
+            return 2
+        return None
+
+    out = []
+    for model in models:
+        t = tier(model)
+        if t is not None:
+            # Shortest match first within a tier, so "M3" beats "M30".
+            out.append(((t, is_junk(model), len(model), model.lower()), model))
+    return out
+
+
+# --- public API ------------------------------------------------------------------
+
+def _result(make: str, model: str, year: int | None) -> dict:
+    return {
+        # Stable, URL-safe key for React lists and for routing to the build later.
+        "id": re.sub(r"[^a-z0-9]+", "-", f"{make} {model} {year or ''}".lower()).strip("-"),
+        "label": f"{year} {make} {model}" if year else f"{make} {model}",
+        "make": make,
+        "model": model,
+        "year": year,
+    }
+
+
+async def search(query: str, limit: int = 8) -> list[dict]:
+    """Turn whatever the user typed into clickable vehicle results.
+
+    Handles "2018 toyota corolla", "toyota corolla", "corolla", "toyota", and any order
+    of those. `year` is null when the user has not typed one - the frontend should ask
+    rather than guessing, since mods differ sharply between model years.
+    """
+    query = query.strip()
+    if len(query) < 2:
+        return []
+
+    year, rest = _split_year(query)
+    make, leftover = _split_make(rest)
+    needle = leftover.lower().strip()
+
+    # A make was typed: search within its models.
+    if make:
+        models = await _load_models(make)
+        ranked = _rank_models(models, needle) if models else []
+        if ranked:
+            return [_result(make, m, year) for m in ranked[:limit]]
+        if not needle:
+            return [_result(make, "", year)] if models else []
+        # The make matched but led nowhere. vPIC contains a make literally named "GTI",
+        # so "golf gti" gets its model token eaten and returns nothing. Fall back to
+        # treating the whole phrase as a model.
+        needle = rest.lower().strip()
+
+    # No usable make. Search the prefetched popular makes for a matching model, so a
+    # bare "mustang" still resolves.
+    if len(needle) < 2:
+        return []
+
+    # Scored across every cached make, then sorted globally - iterating the dict would
+    # rank by whichever network call finished first, which is not deterministic.
+    scored: list[tuple[tuple, str, str]] = []
+    for cached_make in PREFETCH_MAKES:
+        for key, model in _score(_models.get(cached_make, []), needle):
+            scored.append((key, cached_make, model))
+
+    scored.sort(key=lambda row: row[0])
+    return [_result(_pretty(mk), model, year) for _, mk, model in scored[:limit]]
+
+
+def cache_status() -> dict:
+    return {
+        "makes_cached": len(_makes),
+        "model_lists_cached": len(_models),
+        "warmed": bool(_makes),
+    }

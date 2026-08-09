@@ -1,12 +1,24 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router
 from app.core.config import settings
+from app.services import vehicles
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # vPIC's make list is 610KB and slow; load it once here, not per request.
+    await vehicles.warm_cache()
+    yield
+
 
 app = FastAPI(
     title=settings.app_name,
     debug=settings.debug,
+    lifespan=lifespan,
 )
 
 app.add_middleware(

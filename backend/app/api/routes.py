@@ -1,9 +1,10 @@
 from fastapi import APIRouter
 
-from app.api import graphs
+from app.api import graphs, vehicles
 
 router = APIRouter()
 
+router.include_router(vehicles.router)
 router.include_router(graphs.router)
 
 
