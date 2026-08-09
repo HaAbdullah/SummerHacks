@@ -16,14 +16,25 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Fresh AI thread when switching nodes (no community store).
-    setAiThread([]);
-    setGuide(null);
-    setAiInput("");
-    setSuggestions([]);
-    getChatSuggestions(node.id)
-      .then(setSuggestions)
-      .catch(() => setSuggestions([]));
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      // Fresh AI thread when switching nodes (no community store).
+      setAiThread([]);
+      setGuide(null);
+      setAiInput("");
+      setSuggestions([]);
+      getChatSuggestions(node.id)
+        .then((next) => {
+          if (!cancelled) setSuggestions(next);
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestions([]);
+        });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [node.id]);
 
   useEffect(() => {

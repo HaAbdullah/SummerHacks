@@ -134,6 +134,7 @@ export interface Stats {
   mods: number;
   contributors: number;
   active24h: number;
+  contributions24h: number;
   posts: number;
   replies: number;
   merges: number;
@@ -172,6 +173,71 @@ export interface BuildGuide {
   parts: { name: string; note: string; approxPrice: string }[];
   steps: { title: string; detail: string }[];
   renderImage?: string;
+}
+
+/* --- POST /api/ai/compare --------------------------------------------------- */
+
+export type CompareModKey = "engine" | "exhaust" | "wheels" | "brakes";
+export type CompareOperation = "add" | "remove" | "replace" | "unchanged";
+
+export interface CompareMods {
+  engine: string | null;
+  exhaust: string | null;
+  wheels: string | null;
+  brakes: string | null;
+}
+
+/** Complete snake_case node accepted by the comparison endpoint. */
+export interface CompareNode {
+  id: string;
+  car_id: string;
+  title: string;
+  parent_ids: string[];
+  attributes: string[];
+  mods: CompareMods;
+  summary: string;
+  hero_image?: string | null;
+  stats: BuildNodeData["stats"];
+  created_by: string;
+  created_at: string;
+  is_root: boolean;
+  slot?: string | null;
+  level: number;
+}
+
+export interface ModChange {
+  mod_key: CompareModKey;
+  current: string | null;
+  target: string | null;
+  operation: CompareOperation;
+}
+
+export interface ModOperation {
+  operation: Exclude<CompareOperation, "unchanged">;
+  mod_key: CompareModKey;
+  added?: string | null;
+  removed?: string | null;
+}
+
+export interface ComparePricing {
+  new_parts_cost: number;
+  removed_parts_value: number;
+  /** Catalogue value delta only; it is not necessarily the owner's upgrade cost. */
+  build_value_difference: number;
+  pricing_complete: boolean;
+  unresolved_added_parts: string[];
+  unresolved_removed_parts: string[];
+}
+
+export interface CompareResult {
+  base_node_id: string;
+  target_node_id: string;
+  car_id: string;
+  changes: ModChange[];
+  operations: ModOperation[];
+  pricing: ComparePricing;
+  resulting_mods: CompareMods;
+  matches_target: boolean;
 }
 
 export interface PulseData {

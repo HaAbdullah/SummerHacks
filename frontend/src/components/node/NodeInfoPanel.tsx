@@ -74,7 +74,7 @@ export function NodeInfoPanel({
   }, [node.id]);
 
   useEffect(() => {
-    sync();
+    queueMicrotask(sync);
     window.addEventListener(LIBRARY_CHANGED_EVENT, sync);
     window.addEventListener("storage", sync);
     return () => {

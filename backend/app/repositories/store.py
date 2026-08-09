@@ -3,9 +3,8 @@
 Services call this; nothing else reads or writes the file. Swapping this module for
 Postgres later changes no service and no route.
 
-Everything lives in one document under `data/db.json`:
-
-    { "cars": {...}, "nodes": {...}, "posts": {...}, "replies": {...}, "parts": {...} }
+Everything lives in one document under `data/db.json`, one id-keyed map per collection.
+The collection names match the Postgres table names one for one — see COLLECTIONS below.
 
 Writes are atomic (temp file + replace) so an interrupted save cannot leave a truncated
 database behind — which on a demo day matters more than write speed.
@@ -34,9 +33,26 @@ logger = logging.getLogger(__name__)
 _lock = threading.Lock()
 _db: dict[str, dict[str, Any]] | None = None
 
-EMPTY: dict[str, dict[str, Any]] = {
-    "cars": {}, "nodes": {}, "posts": {}, "replies": {}, "parts": {},
-}
+# Parent-first, so the same order can be reused by the Supabase store's insert sequence.
+COLLECTIONS = (
+    "cars",
+    "nodes",
+    "posts",
+    "replies",
+    # Build-comparison reference data and historical output.
+    "parts",
+    "part_prices",
+    "modifications",
+    "node_modifications",
+    "modification_parts",
+    "modification_dependencies",
+    "service_tasks",
+    "modification_tasks",
+    "task_dependencies",
+    "build_estimate_runs",
+)
+
+EMPTY: dict[str, dict[str, Any]] = {name: {} for name in COLLECTIONS}
 
 
 def _load() -> dict[str, dict[str, Any]]:

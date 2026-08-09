@@ -14,8 +14,8 @@ from app.models.schemas import (
     Car,
     ChatMessage,
     CommunityPost,
-    CompareDraftRequest,
-    CompareResponse,
+    CompareRequest,
+    CompareResult,
     CreateNodeRequest,
     CreatePostRequest,
     CreateReplyRequest,
@@ -28,6 +28,7 @@ from app.models.schemas import (
     Stats,
 )
 from app.services import (
+    agentic_compare,
     ai_service,
     analytics_service,
     chat_service,
@@ -349,26 +350,22 @@ def get_build_mod(node_id: str) -> BuildModPayload:
     return payload
 
 
-@router.post("/ai/compare", response_model=CompareResponse, tags=["ai"])
-def compare_draft(req: CompareDraftRequest) -> CompareResponse:
-    """Diff an unsaved build — what the vision model just extracted from a photo.
+@router.post("/ai/compare", response_model=CompareResult, tags=["ai"])
+async def compare_nodes(req: CompareRequest) -> CompareResult:
+    """Transform a supplied Node A into supplied Node B through deterministic tools.
 
-    Same response shape as the GET, so one renderer handles both. `toNodeId` is empty
-    because the build does not exist yet. Omit `fromNodeId` to diff against stock.
+    The route never retrieves either node. LangChain chooses the next tool call, while
+    application functions determine changes, copy target values, calculate catalogue
+    prices, and prove that the temporary state matches Node B.
     """
-    result = ai_service.compare_draft(req.fromNodeId, req.mods, req.title)
-    if result is None:
-        raise HTTPException(404, f"No node '{req.fromNodeId}'")
-    return result
-
-
-@router.get("/ai/compare", response_model=CompareResponse, tags=["ai"])
-def compare_nodes(
-    from_node: str = Query(..., alias="from"),
-    to_node: str = Query(..., alias="to"),
-) -> CompareResponse:
-    """getCompareNode. Deterministic per-slot diff; no model involved."""
-    result = ai_service.compare(from_node, to_node)
-    if result is None:
-        raise HTTPException(404, "One or both nodes not found")
-    return result
+    try:
+        return await agentic_compare.compare_nodes(
+            req.node_a.model_dump(),
+            req.node_b.model_dump(),
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except agentic_compare.CompareConfigurationError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    except agentic_compare.CompareWorkflowError as exc:
+        raise HTTPException(502, str(exc)) from exc

@@ -13,7 +13,8 @@ import {
 import "@xyflow/react/dist/style.css";
 import { motion } from "framer-motion";
 import { getGraph, createBranch } from "@/lib/api";
-import type { BuildNodeData } from "@/lib/types";
+import { compareNodes, toCompareNode } from "@/lib/api/compare";
+import type { BuildNodeData, CompareResult } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import {
   filterMatchingIds,
@@ -24,7 +25,7 @@ import { layoutGraph } from "./layout";
 import { BuildNode, type BuildFlowNode } from "./BuildNode";
 import { BranchEdge, type BranchFlowEdge } from "./BranchEdge";
 import { AddBranchModal } from "./AddBranchModal";
-import { ComparePanel } from "./ComparePanel";
+import { CompareResultPanel } from "./CompareResultPanel";
 
 const nodeTypes = { build: BuildNode };
 const edgeTypes = { branch: BranchEdge };
@@ -40,6 +41,10 @@ function CanvasInner({
   const [buildNodes, setBuildNodes] = useState<BuildNodeData[]>([]);
   const [loading, setLoading] = useState(true);
   const [zoomPct, setZoomPct] = useState(75);
+  const [compareSelection, setCompareSelection] = useState<string[]>([]);
+  const [compareResult, setCompareResult] = useState<CompareResult | null>(null);
+  const [compareBusy, setCompareBusy] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
   const entered = useRef(false);
   const navigating = useRef(false);
   const { fitView, setCenter, getZoom, zoomIn, zoomOut } = useReactFlow();
@@ -68,9 +73,6 @@ function CanvasInner({
 
   const [nodes, setNodes, onNodesChange] = useNodesState<BuildFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<BranchFlowEdge>([]);
-  /** Ordered shift-click pair for Compare (from → to). Max 2. */
-  const [compareSelection, setCompareSelection] = useState<string[]>([]);
-  const [compareOpen, setCompareOpen] = useState(false);
 
   const reload = useCallback(async () => {
     const graph = await getGraph(carId);
@@ -329,26 +331,50 @@ function CanvasInner({
 
   const onNodeClick: NodeMouseHandler<BuildFlowNode> = useCallback(
     (e, node) => {
+      if (e.shiftKey && !mergeMode) {
+        setCompareSelection((selected) => {
+          if (selected.includes(node.id)) {
+            return selected.filter((id) => id !== node.id);
+          }
+          return selected.length < 2 ? [...selected, node.id] : [selected[1], node.id];
+        });
+        setCompareResult(null);
+        setCompareError(null);
+        return;
+      }
       if (mergeMode) {
         toggleMergeSelection(node.id);
         return;
       }
-      // Shift-click: multi-select up to 2 nodes for Compare (order = from → to)
-      if (e.shiftKey) {
-        setCompareSelection((prev) => {
-          if (prev.includes(node.id)) return prev.filter((id) => id !== node.id);
-          if (prev.length >= 2) return [node.id]; // restart pair with this as "from"
-          return [...prev, node.id];
-        });
-        setCompareOpen(false);
-        return;
-      }
       setCompareSelection([]);
-      setCompareOpen(false);
+      setCompareResult(null);
+      setCompareError(null);
       void openNode(node.id);
     },
     [mergeMode, toggleMergeSelection, openNode],
   );
+
+  const runComparison = async () => {
+    if (compareSelection.length !== 2 || compareBusy) return;
+    const base = buildNodes.find((node) => node.id === compareSelection[0]);
+    const target = buildNodes.find((node) => node.id === compareSelection[1]);
+    if (!base || !target) return;
+
+    setCompareBusy(true);
+    setCompareError(null);
+    setCompareResult(null);
+    try {
+      setCompareResult(
+        await compareNodes(toCompareNode(base), toCompareNode(target)),
+      );
+    } catch (error) {
+      setCompareError(
+        error instanceof Error ? error.message : "Node comparison failed",
+      );
+    } finally {
+      setCompareBusy(false);
+    }
+  };
 
   const onNodeMouseEnter: NodeMouseHandler<BuildFlowNode> = useCallback(
     (_e, node) => setHoverNodeId(node.id),
@@ -371,7 +397,8 @@ function CanvasInner({
 
   const clearCompare = useCallback(() => {
     setCompareSelection([]);
-    setCompareOpen(false);
+    setCompareResult(null);
+    setCompareError(null);
   }, []);
 
   useEffect(() => {
@@ -381,21 +408,6 @@ function CanvasInner({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [clearCompare]);
-
-  const compareFrom = useMemo(
-    () =>
-      compareSelection[0]
-        ? buildNodes.find((n) => n.id === compareSelection[0])
-        : undefined,
-    [buildNodes, compareSelection],
-  );
-  const compareTo = useMemo(
-    () =>
-      compareSelection[1]
-        ? buildNodes.find((n) => n.id === compareSelection[1])
-        : undefined,
-    [buildNodes, compareSelection],
-  );
 
   const fuse = async () => {
     if (mergeSelection.length !== 2) return;
@@ -454,7 +466,7 @@ function CanvasInner({
       {/* top-right; shift left when compare panel is open so controls stay clickable */}
       <div
         className={`absolute top-3 z-20 flex flex-wrap items-center justify-end gap-1.5 transition-[right] duration-200 ${
-          compareOpen ? "right-[min(400px,calc(28vw+2.5rem))]" : "right-3"
+          compareResult ? "right-[410px]" : "right-3"
         }`}
       >
         <button
@@ -464,6 +476,21 @@ function CanvasInner({
         >
           {showFullTree ? "Collapse Tree" : "Show All Modifications"}
         </button>
+        <button
+          type="button"
+          onClick={runComparison}
+          disabled={compareSelection.length !== 2 || compareBusy}
+          className="btn btn-primary focus-ring disabled:cursor-not-allowed disabled:opacity-45"
+          title="Shift-click two nodes, then compare"
+        >
+          {compareBusy ? "Comparing…" : "Compare"}
+        </button>
+        {compareSelection.length < 2 && (
+          <span className="rounded-[var(--radius-sm)] border border-line bg-surface px-2.5 py-1.5 text-[12px] text-muted">
+            Shift-click {2 - compareSelection.length} node
+            {compareSelection.length === 0 ? "s" : ""}
+          </span>
+        )}
         <button
           type="button"
           onClick={() => {
@@ -491,31 +518,31 @@ function CanvasInner({
             Select {2 - mergeSelection.length} more
           </span>
         )}
-        {!mergeMode && compareSelection.length > 0 && compareSelection.length < 2 && (
-          <span className="rounded-[var(--radius-sm)] border border-line bg-surface px-2.5 py-1.5 text-[12px] text-muted">
-            Shift-click {2 - compareSelection.length} more to compare
-          </span>
-        )}
-        {!mergeMode && compareSelection.length === 2 && (
-          <button
-            type="button"
-            onClick={() => setCompareOpen(true)}
-            className={`btn focus-ring ${
-              compareOpen ? "btn-accent" : "btn-primary"
-            }`}
-          >
-            Compare
-          </button>
-        )}
       </div>
 
-      {compareOpen && compareFrom && compareTo && (
-        <ComparePanel
-          from={compareFrom}
-          to={compareTo}
-          onClose={() => setCompareOpen(false)}
-        />
+      {compareError && (
+        <div className="absolute right-3 top-14 z-30 max-w-[390px] rounded-xl border border-red-500/25 bg-red-950/90 px-4 py-3 text-[12px] text-red-100 shadow-xl">
+          {compareError}
+        </div>
       )}
+
+      {compareResult &&
+        (() => {
+          const base = buildNodes.find(
+            (node) => node.id === compareResult.base_node_id,
+          );
+          const target = buildNodes.find(
+            (node) => node.id === compareResult.target_node_id,
+          );
+          return base && target ? (
+            <CompareResultPanel
+              base={base}
+              target={target}
+              result={compareResult}
+              onClose={() => setCompareResult(null)}
+            />
+          ) : null;
+        })()}
 
       {addBranchRequest && (
         <AddBranchModal
@@ -559,7 +586,7 @@ function CanvasInner({
 
       <div
         className={`absolute bottom-3 z-20 flex items-center gap-0.5 rounded-[var(--radius)] border border-line bg-surface p-0.5 shadow-[var(--shadow-sm)] transition-[right] duration-200 ${
-          compareOpen ? "right-[min(400px,calc(28vw+2.5rem))]" : "right-3"
+          compareResult ? "right-[410px]" : "right-3"
         }`}
       >
         <button

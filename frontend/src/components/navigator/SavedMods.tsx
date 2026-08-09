@@ -19,7 +19,7 @@ export function SavedMods({ carId }: { carId: string }) {
   }, [carId]);
 
   useEffect(() => {
-    reload();
+    queueMicrotask(reload);
     const onChange = () => reload();
     window.addEventListener(LIBRARY_CHANGED_EVENT, onChange);
     window.addEventListener("storage", onChange);

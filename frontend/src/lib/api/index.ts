@@ -31,6 +31,8 @@ import type {
 import * as backend from "./backend";
 import { buildGuideTemplates, type GuideTier } from "./seed";
 
+export { CompareError, compareNodes, toCompareNode } from "./compare";
+
 // Local-only mock store — node-level Community/AI chat has no backend yet.
 let chats: ChatMessage[] = [];
 
@@ -229,7 +231,7 @@ export async function getPulse(carId: string): Promise<PulseData> {
   const s = await backend.getCarStats(carId);
   return {
     totalNodes: s.builds,
-    contributions24h: s.active24h,
+    contributions24h: s.contributions24h,
     contributors: s.contributors,
     hottestNodeId: s.hottestNodeId,
   };

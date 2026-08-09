@@ -20,7 +20,7 @@ frontend/.env
 frontend/.env.local
 !.env.example
 !**/.env.example
-vercel-env-vars.txt
+deploy-env-vars.txt
 
 # Next.js
 frontend/.next/

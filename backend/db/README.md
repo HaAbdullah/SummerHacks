@@ -18,8 +18,15 @@ Switching to Postgres is an env change, not a code change. Four steps:
 
 Dashboard → **SQL Editor** → New query → paste all of [`schema.sql`](schema.sql) → Run.
 
-Creates `cars`, `nodes`, `posts`, `replies`, their indexes, the `car_stats` view, and
-read-only RLS policies. Every statement is idempotent, so re-running is safe.
+Creates `cars`, `nodes`, `posts`, `replies` and the build-comparison reference tables
+(`modifications`, `node_modifications`, `parts`, `part_prices`, `modification_parts`,
+`modification_dependencies`, `service_tasks`, `modification_tasks`, `task_dependencies`,
+`build_estimate_runs`), their indexes, the `car_stats` view, and read-only RLS policies.
+Every statement is idempotent, so re-running is safe.
+
+`parts` predates the comparison schema, so its new columns arrive as `alter table … add column if
+not exists` rather than in the `create`. On a database that already has the table, a
+`create table if not exists` is a no-op and would silently skip them.
 
 ## 3. Create the storage bucket
 
@@ -54,11 +61,15 @@ curl http://localhost:8000/api/health
 { "status": "ok", "storage": "supabase" }
 ```
 
-Then seed:
+Then seed the demo graph and parts catalogue:
 
 ```bash
-.venv/Scripts/python.exe scripts/seed.py
+.venv/Scripts/python.exe scripts/seed.py                # cars, nodes, posts, replies
+.venv/Scripts/python.exe scripts/seed_parts.py          # parts + part_prices
 ```
+
+`seed.py` carries reference catalogue tables across untouched, so re-running it to change
+demo content does not remove the parts database behind it.
 
 ---
 
@@ -79,6 +90,14 @@ a 2022 Corolla take different parts, so they are separate build graphs.
 **`storage_path` is stored alongside `media_url`.** The URL is what the browser loads; the
 path is what you need to find or delete the file later, once the URL is a CDN or signed
 one.
+
+**Prices are rows, not only a column.** `part_prices` carries a `captured_at` so historical
+market values remain auditable. The current comparison endpoint reads the exact-match
+catalogue price from `parts`; the history table is available for future price-source
+selection without changing `nodes.mods` or other graph behavior.
+
+**Array foreign keys, again.** `parent_ids` is still a `text[]` with the caveat noted
+above it. Catalogue relationships use join tables where referential integrity is required.
 
 ## Migrating existing JSON data
 
