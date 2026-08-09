@@ -94,6 +94,11 @@ Then add the same four variables in Vercel → Project → Settings → Environm
 | `SUPABASE_SERVICE_KEY` | the `service_role` key |
 | `SUPABASE_BUCKET` | `community-media` |
 | `CORS_ORIGINS` | your Vercel **frontend** URL |
+| `AI_API_KEY` | OpenAI key for the node chatbox |
+| `AI_MODEL` | `gpt-4o-mini` (optional, this is the default) |
+
+Without `AI_API_KEY` the chatbox still answers, using the node's own mods and notes — so
+it degrades rather than erroring, but it is not the AI feature you want to demo.
 
 **`CORS_ORIGINS` is the one everyone forgets.** Leave it at `http://localhost:3000` and
 the browser blocks every request from the deployed frontend — the API works fine in curl

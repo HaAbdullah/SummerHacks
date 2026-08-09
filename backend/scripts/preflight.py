@@ -78,6 +78,14 @@ def check_local() -> None:
              "will fail until Supabase Storage is configured",
     )
 
+    # --- AI chatbox ---
+    check(
+        "AI_API_KEY", bool(settings.ai_api_key.strip()) or None,
+        f"set, model {settings.ai_model}" if settings.ai_api_key.strip()
+        else "unset — the chatbox falls back to an answer built from the node's own "
+             "mods and notes. Works, but it is not the AI feature you want to demo.",
+    )
+
     # --- CORS ---
     origins = settings.cors_origins_list
     has_prod = any(not o.startswith("http://localhost") for o in origins)
