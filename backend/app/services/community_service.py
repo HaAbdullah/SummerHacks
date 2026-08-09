@@ -132,12 +132,19 @@ def create_reply(post_id: str, req: CreateReplyRequest) -> Reply | None:
         return None
 
     reply_id = f"reply-{post_id}-{int(datetime.now().timestamp() * 1000) % 1000000}"
+    # Same rule as posts: the author's own words if given, otherwise a transcription
+    # placeholder — a media reply is never stored as a bare, unsearchable blob.
+    body, _ = transcription.resolve_body(req.kind, "", req.body, req.mediaUrl)
     reply = Reply(
         id=reply_id,
         postId=post_id,
         author=req.author,
         avatarColor=_avatar_color(req.author),
-        body=req.body.strip(),
+        kind=req.kind,
+        body=body,
+        mediaUrl=req.mediaUrl,
+        storagePath=req.storagePath,
+        durationSec=req.durationSec,
         createdAt=_now(),
     )
     store.put("replies", reply_id, reply.model_dump())

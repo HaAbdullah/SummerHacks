@@ -239,7 +239,30 @@ export async function addContributionReply(
   body: string,
   author = "You",
 ): Promise<NoteReply> {
-  return backend.createReply(noteId, body, author);
+  return backend.createReply(noteId, { kind: "text", body, author });
+}
+
+/** Reply with a real file (image/sketch/voice) instead of typed text. */
+export async function uploadContributionReply(
+  noteId: string,
+  file: File | Blob,
+  meta: {
+    kind: MediaKind;
+    author: string;
+    body?: string;
+    durationSec?: number;
+    filename?: string;
+  },
+): Promise<NoteReply> {
+  const filename =
+    meta.filename ?? (file instanceof File ? file.name : `${meta.kind}-${Date.now()}`);
+  const form = new FormData();
+  form.append("file", file, filename);
+  form.append("kind", meta.kind);
+  form.append("body", meta.body ?? "");
+  form.append("author", meta.author);
+  if (meta.durationSec != null) form.append("durationSec", String(meta.durationSec));
+  return backend.uploadReply(noteId, form);
 }
 
 // --- pulse (real stats, reshaped) -----------------------------------------

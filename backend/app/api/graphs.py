@@ -311,6 +311,47 @@ def create_reply(post_id: str, req: CreateReplyRequest) -> Reply:
     return reply
 
 
+@router.post(
+    "/posts/{post_id}/replies/upload",
+    response_model=Reply,
+    status_code=201,
+    tags=["community"],
+)
+async def upload_reply(
+    post_id: str,
+    file: UploadFile = File(..., description="Photo, sketch, or voice clip"),
+    kind: str = Form(..., description="image | sketch | voice"),
+    body: str = Form(""),
+    author: str = Form("Anonymous"),
+    durationSec: int | None = Form(None),
+) -> Reply:
+    """Same physical-input path as /nodes/{id}/posts/upload, scoped to a reply."""
+    if community_service.get_post(post_id) is None:
+        raise HTTPException(404, f"No post '{post_id}'")
+
+    data = await file.read()
+    try:
+        media.validate(file.filename or "", len(data))
+        stored = media.store(post_id, file.filename or "upload", data)
+    except media.UploadError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    reply = community_service.create_reply(
+        post_id,
+        CreateReplyRequest(
+            kind=kind,
+            body=body,
+            mediaUrl=stored["url"],
+            storagePath=stored["storagePath"],
+            durationSec=durationSec,
+            author=author,
+        ),
+    )
+    if reply is None:
+        raise HTTPException(404, f"No post '{post_id}'")
+    return reply
+
+
 # --- AI chatbox (node-level) --------------------------------------------------------
 
 @router.post("/nodes/{node_id}/chat", response_model=list[ChatMessage], tags=["ai"])

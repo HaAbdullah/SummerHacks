@@ -168,16 +168,21 @@ function GalleryCard({
       )}
 
       {note.kind === "voice" && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-line bg-white/5 p-4">
-          <Mic size={22} className="shrink-0 text-accent" />
-          <div className="min-w-0">
-            <span className="block truncate text-[10px] font-bold text-ink">
-              {note.body ?? "Voice note"}
-            </span>
-            <span className="block text-[9px] text-muted">
-              {note.durationSec ?? 0}s
-            </span>
+        <div className="mb-4 flex flex-col gap-2.5 rounded-xl border border-line bg-white/5 p-4">
+          <div className="flex items-center gap-3">
+            <Mic size={22} className="shrink-0 text-accent" />
+            <div className="min-w-0">
+              <span className="block truncate text-[10px] font-bold text-ink">
+                {note.body ?? "Voice note"}
+              </span>
+              <span className="block text-[9px] text-muted">
+                {note.durationSec ?? 0}s
+              </span>
+            </div>
           </div>
+          {mediaSrc && (
+            <audio controls src={mediaSrc} className="nodrag h-8 w-full" />
+          )}
         </div>
       )}
 
@@ -266,6 +271,7 @@ function BoardInner({
   const drawing = useRef(false);
   const [noteComposerOn, setNoteComposerOn] = useState(false);
   const [noteDraft, setNoteDraft] = useState("");
+  const [sketchTitle, setSketchTitle] = useState("");
 
   // Photos get their own caption modal before landing on the board — a
   // small queue so dropping/selecting several images composes them one at
@@ -423,7 +429,7 @@ function BoardInner({
     const created = await uploadNote(nodeId, blob, {
       kind: "sketch",
       author: "You",
-      body: "Sketch",
+      body: sketchTitle.trim() || "Sketch",
       filename: "sketch.png",
     });
     onNotesChange([created, ...notes]);
@@ -431,6 +437,7 @@ function BoardInner({
   };
 
   const startSketch = () => {
+    setSketchTitle("");
     setSketchOn(true);
     requestAnimationFrame(() => {
       const c = canvasRef.current;
@@ -734,6 +741,16 @@ function BoardInner({
               }}
               onMouseLeave={() => {
                 drawing.current = false;
+              }}
+            />
+            <input
+              autoFocus
+              className="input focus-ring mt-2.5"
+              placeholder="Title this sketch…"
+              value={sketchTitle}
+              onChange={(e) => setSketchTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void attachSketch();
               }}
             />
             <div className="mt-2.5 flex justify-end gap-1.5">

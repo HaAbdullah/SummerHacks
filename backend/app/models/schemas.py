@@ -55,7 +55,11 @@ class Reply(BaseModel):
     postId: str
     author: str
     avatarColor: str = "#d5001c"
+    kind: PostKind = "text"
     body: str
+    mediaUrl: str | None = None
+    storagePath: str | None = None
+    durationSec: int | None = None
     createdAt: str
 
     @computed_field  # type: ignore[prop-decorator]
@@ -204,7 +208,11 @@ class CreatePostRequest(BaseModel):
 
 
 class CreateReplyRequest(BaseModel):
-    body: str
+    kind: PostKind = "text"
+    body: str = ""
+    mediaUrl: str | None = None
+    storagePath: str | None = None
+    durationSec: int | None = None
     author: str = "Anonymous"
 
 
