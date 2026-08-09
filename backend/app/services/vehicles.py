@@ -16,8 +16,10 @@ still returns something, because a third-party outage must not take the site dow
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
+from pathlib import Path
 
 import httpx
 
@@ -89,9 +91,40 @@ def _pretty(make: str) -> str:
 
 # --- startup ---------------------------------------------------------------------
 
+SNAPSHOT = Path(__file__).resolve().parent.parent.parent / "data" / "vpic_cache.json"
+
+
+def load_snapshot() -> bool:
+    """Load the committed vPIC snapshot. Returns False if it is missing.
+
+    Reading 261KB off disk takes milliseconds; fetching the same data from vPIC takes
+    ~6.4s. That difference is dead weight on every cold start, and on a serverless host
+    there is no warm process at all — it would be paid on every request.
+
+    Rebuild with `python scripts/build_vpic_cache.py`.
+    """
+    global _makes, _models
+    if not SNAPSHOT.exists():
+        return False
+
+    data = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    _makes = data.get("makes", [])
+    _models = data.get("models", {})
+    logger.info(
+        "vPIC snapshot loaded: %d makes, %d model lists (fetched %s)",
+        len(_makes), len(_models), data.get("fetchedAt", "unknown"),
+    )
+    return bool(_makes)
+
+
 async def warm_cache() -> None:
-    """Load the make list and the popular makes' models. Never fatal."""
+    """Prepare the catalogue. Snapshot first, network only as a fallback."""
     global _makes
+
+    if load_snapshot():
+        return
+
+    logger.warning("no vPIC snapshot at %s; falling back to a live fetch", SNAPSHOT)
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             resp = await client.get(f"{VPIC_BASE}/getallmakes", params={"format": "json"})

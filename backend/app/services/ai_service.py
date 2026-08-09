@@ -19,7 +19,7 @@ from app.models.schemas import (
     Node,
 )
 from app.repositories import store
-from app.services import community_service, placement
+from app.services import community_service, parts, placement
 
 
 def compare(from_id: str, to_id: str) -> CompareResponse | None:
@@ -101,4 +101,5 @@ def build_payload(node_id: str) -> BuildModPayload | None:
         communityText=[p.body for p in posts if p.body.strip()],
         modCount=Mods(**(node.get("mods") or {})).count(),
         postCount=len(posts),
+        parts=parts.estimate(node["carId"], node.get("mods") or {}),
     )

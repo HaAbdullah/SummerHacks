@@ -1,0 +1,39 @@
+{
+  "_comment": "Real parts with real prices, keyed by generation then mod slot. Ahmed's catalogue, corrected: the Brembo GT-S kit was an Audi A6/A7 part in a Corolla list (dropped), the exhaust items filed under 'Radiator Parts' moved to exhaust, and TPMS sensors moved out of wheels since a pressure sensor is a service part, not a mod. Prices are USD as captured on 2026-08-08 and will drift — they are indicative, not a live feed.",
+
+  "toyota-corolla-e170": {
+    "engine": [
+      { "name": "Beck/Arnley VVT Solenoid 024-1950", "price": 83.41, "brand": "Beck/Arnley", "category": "timing" },
+      { "name": "Beck/Arnley VVT Solenoid 024-2136", "price": 97.98, "brand": "Beck/Arnley", "category": "timing" },
+      { "name": "Dorman OE Solutions Camshaft Phaser", "price": 196.61, "brand": "Dorman", "category": "timing" },
+      { "name": "Dorman OE Solutions VVT Solenoid", "price": 61.95, "brand": "Dorman", "category": "timing" },
+      { "name": "Beck/Arnley Crankshaft Position Sensor 180-0713", "price": 84.11, "brand": "Beck/Arnley", "category": "crankshaft" },
+      { "name": "Clevite Thrust Washer Set (1ZR-FE/2ZR-FE)", "price": 16.45, "brand": "Clevite", "category": "crankshaft" },
+      { "name": "Delphi Crankshaft Position Sensor", "price": 101.26, "brand": "Delphi", "category": "crankshaft" },
+      { "name": "Delphi Crankshaft Position Sensor (alt)", "price": 76.36, "brand": "Delphi", "category": "crankshaft" },
+      { "name": "Beck/Arnley Oil Filter Housing Cover 041-0012", "price": 32.44, "brand": "Beck/Arnley", "category": "oil" },
+      { "name": "Beck/Arnley Oil Pressure Switch w/Light 201-1649", "price": 9.53, "brand": "Beck/Arnley", "category": "oil" },
+      { "name": "HPS Billet Aluminum Oil Cap", "price": 50.00, "brand": "HPS", "category": "oil" },
+      { "name": "HPS M12 x 1.25 Magnetic Oil Drain Plug", "price": 25.67, "brand": "HPS", "category": "oil" },
+      { "name": "Beck/Arnley Coolant Thermostat 143-0722", "price": 19.55, "brand": "Beck/Arnley", "category": "cooling" }
+    ],
+    "exhaust": [
+      { "name": "BRExhaust Direct-Fit Exhaust System (1.8L, 2012-2013)", "price": 227.00, "brand": "BRExhaust", "category": "system" },
+      { "name": "BRExhaust Muffler Assembly, Rear (2009-2013 1.8L)", "price": 473.50, "brand": "BRExhaust", "category": "muffler" },
+      { "name": "BRExhaust Muffler", "price": 115.52, "brand": "BRExhaust", "category": "muffler" },
+      { "name": "BRExhaust Bolt and Spring", "price": 44.70, "brand": "BRExhaust", "category": "hardware" },
+      { "name": "BRExhaust Pipe Flange Gasket", "price": 25.56, "brand": "BRExhaust", "category": "hardware" }
+    ],
+    "brakes": [
+      { "name": "Brembo Premium NAO Ceramic Pads, 17.5mm", "price": 71.35, "brand": "Brembo", "category": "pads" },
+      { "name": "Brembo Premium NAO Ceramic Pads, 14.4mm", "price": 63.65, "brand": "Brembo", "category": "pads" },
+      { "name": "Beck/Arnley Drum Brake Shoe 081-3214", "price": 57.30, "brand": "Beck/Arnley", "category": "shoes" }
+    ],
+    "wheels": [
+      { "name": "BORA 10mm Aluminum Wheel Spacer (5x100, 54.1mm, 12x1.5)", "price": 59.99, "brand": "BORA", "category": "spacers" },
+      { "name": "Huf 315MHz IntelliSens TPMS Sensor", "price": 35.00, "brand": "Huf", "category": "tpms" },
+      { "name": "Dorman DiRECT-FIT TPMS Sensor", "price": 72.02, "brand": "Dorman", "category": "tpms" },
+      { "name": "Dorman TPMS Aluminum Clamp-In Valve Stem", "price": 9.88, "brand": "Dorman", "category": "tpms" }
+    ]
+  }
+}

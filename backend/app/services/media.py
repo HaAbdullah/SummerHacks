@@ -80,6 +80,47 @@ def store(node_id: str, filename: str, data: bytes) -> dict:
     return {"url": url, "storagePath": path, "contentType": content_type}
 
 
+def signed_upload(node_id: str, filename: str) -> dict:
+    """Issue a one-off URL the browser uploads to directly.
+
+    Needed on serverless hosts, where the request body is capped around 4.5MB — a voice
+    clip or a phone video would be rejected before reaching us. Sending the file straight
+    to Supabase also means it never occupies API memory, which is better everywhere, not
+    just on Vercel.
+
+    Flow: call this → PUT the file to `uploadUrl` → POST the post with `mediaUrl`.
+    """
+    if not settings.use_supabase:
+        raise UploadError(
+            "Direct upload needs Supabase Storage. Set SUPABASE_URL and "
+            "SUPABASE_SERVICE_KEY, or POST the file to /posts/upload instead."
+        )
+
+    stem, suffix = _safe_name(filename)
+    if suffix not in ALLOWED:
+        raise UploadError(
+            f"'{suffix or 'no extension'}' is not a supported file type. "
+            f"Accepted: {', '.join(sorted(ALLOWED))}"
+        )
+
+    from supabase import create_client
+
+    path = f"{node_id}/{uuid.uuid4().hex[:12]}-{stem}{suffix}"
+    client = create_client(settings.supabase_url, settings.supabase_service_key)
+    bucket = client.storage.from_(settings.supabase_bucket)
+    signed = bucket.create_signed_upload_url(path)
+
+    return {
+        "uploadUrl": signed["signed_url"],
+        "token": signed.get("token"),
+        "storagePath": path,
+        # Where the file will live once the PUT succeeds — send this back as mediaUrl.
+        "mediaUrl": bucket.get_public_url(path),
+        "contentType": CONTENT_TYPES.get(suffix, "application/octet-stream"),
+        "maxBytes": MAX_BYTES,
+    }
+
+
 def _to_supabase(path: str, data: bytes, content_type: str) -> str:
     from supabase import create_client
 

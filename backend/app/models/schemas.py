@@ -263,3 +263,7 @@ class BuildModPayload(BaseModel):
     communityText: list[str]       # every post body, already transcribed
     modCount: int
     postCount: int
+    # Real parts with real prices for this generation's filled slots, so a build guide
+    # can quote a catalogue instead of inventing part numbers. `parts.curated` is False
+    # when nobody has curated parts for this car yet.
+    parts: dict = Field(default_factory=dict)

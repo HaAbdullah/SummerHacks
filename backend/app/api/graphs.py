@@ -28,6 +28,7 @@ from app.services import (
     generations,
     graph_service,
     media,
+    parts,
     tagging,
 )
 
@@ -96,6 +97,12 @@ def get_generations(car_id: str) -> list[dict]:
     return generations.for_model(make, model)
 
 
+@router.get("/cars/{car_id}/parts", tags=["graph"])
+def get_parts(car_id: str) -> dict:
+    """Curated parts with prices for a generation, grouped by mod slot."""
+    return {"carId": car_id, "slots": parts.for_car(car_id)}
+
+
 @router.get("/attributes", tags=["graph"])
 def get_all_attributes() -> list[dict]:
     """getAttributes — the full tag vocabulary, four groups in layer order."""
@@ -153,6 +160,30 @@ def create_post(node_id: str, req: CreatePostRequest) -> CommunityPost:
     if post is None:
         raise HTTPException(404, f"No node '{node_id}'")
     return post
+
+
+@router.post("/nodes/{node_id}/posts/upload-url", tags=["community"])
+def create_upload_url(
+    node_id: str,
+    filename: str = Body(..., embed=True, description="e.g. engine-bay.jpg"),
+) -> dict:
+    """Get a URL the browser uploads the file to directly.
+
+    Use this on serverless hosts, where the request body is capped around 4.5MB and a
+    voice clip or video would be rejected before reaching the API.
+
+        1. POST here with the filename        -> { uploadUrl, mediaUrl, storagePath }
+        2. PUT the file to `uploadUrl`
+        3. POST /nodes/{id}/posts with `mediaUrl` and `storagePath`
+
+    On a long-running host you can skip all this and POST the file to /posts/upload.
+    """
+    if graph_service.get_node(node_id) is None:
+        raise HTTPException(404, f"No node '{node_id}'")
+    try:
+        return media.signed_upload(node_id, filename)
+    except media.UploadError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
 
 @router.post(
