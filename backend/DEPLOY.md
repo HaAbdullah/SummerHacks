@@ -12,14 +12,28 @@ once deployed.
 
 ---
 
-## Why Supabase comes first
+## You can deploy today, read-only
 
-`data/db.json` is gitignored, and a serverless filesystem is read-only. Deploy without
-Supabase and you get a site that **loads but is empty** — search works, because it reads a
-committed file, but there are no cars, no builds, no posts, and every write fails
-silently.
+`data/db.json` is gitignored (it is live data), but `data/seed_snapshot.json` is
+committed, and the store falls back to it. So a deploy with no Supabase gives a site
+that is **fully browsable** — three cars, 41 builds, 93 posts, replies, parts, search,
+stats, both AI endpoints.
 
-So the order is: **Supabase → seed → deploy.** Not the other way round.
+What it cannot do is **write**. Contributing, forking, replying and uploading all return
+503 with a message pointing here, because a serverless filesystem cannot persist
+anything.
+
+That is a usable demo, and it decouples "deploy works" from "Supabase is up" — worth
+doing now rather than on Sunday. But contributions are the hackathon's core requirement,
+so Supabase still has to land before submission.
+
+Refresh the fallback whenever you reseed:
+
+```bash
+.venv/Scripts/python.exe scripts/seed.py
+.venv/Scripts/python.exe scripts/seed_parts.py
+.venv/Scripts/python.exe scripts/snapshot.py
+```
 
 ---
 

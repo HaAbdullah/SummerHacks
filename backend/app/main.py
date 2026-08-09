@@ -4,8 +4,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from fastapi.responses import JSONResponse
+
 from app.api.routes import router
 from app.core.config import settings
+from app.repositories.store import ReadOnlyStorage
 from app.services import media, vehicles
 
 
@@ -37,6 +40,12 @@ app.include_router(router, prefix=settings.api_prefix)
 if not settings.use_supabase:
     media.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     app.mount("/media", StaticFiles(directory=media.UPLOAD_DIR), name="media")
+
+
+@app.exception_handler(ReadOnlyStorage)
+async def _read_only(request, exc: ReadOnlyStorage):
+    """A write against a read-only filesystem is a config problem, not a server fault."""
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
 
 
 @app.get("/")

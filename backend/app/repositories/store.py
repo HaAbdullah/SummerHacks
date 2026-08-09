@@ -14,6 +14,7 @@ database behind — which on a demo day matters more than write speed.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import threading
 from pathlib import Path
@@ -21,6 +22,14 @@ from typing import Any
 
 DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
 DB_PATH = DATA_DIR / "db.json"
+
+# Committed fallback. db.json is gitignored (it is live data), so a fresh checkout — or a
+# serverless deploy, where the filesystem is read-only and nothing was ever written —
+# would otherwise start completely empty. Loading this means the site is at least
+# browsable without Supabase; writes still fail, loudly.
+SNAPSHOT_PATH = DATA_DIR / "seed_snapshot.json"
+
+logger = logging.getLogger(__name__)
 
 _lock = threading.Lock()
 _db: dict[str, dict[str, Any]] | None = None
@@ -35,20 +44,36 @@ def _load() -> dict[str, dict[str, Any]]:
     if _db is not None:
         return _db
 
-    if DB_PATH.exists():
-        raw = json.loads(DB_PATH.read_text(encoding="utf-8"))
+    source = DB_PATH if DB_PATH.exists() else SNAPSHOT_PATH
+    if source.exists():
+        raw = json.loads(source.read_text(encoding="utf-8"))
         _db = {key: raw.get(key, {}) for key in EMPTY}
+        if source is SNAPSHOT_PATH:
+            logger.info("loaded committed snapshot (%s) — no db.json present", source.name)
     else:
         _db = {key: {} for key in EMPTY}
     return _db
 
 
+class ReadOnlyStorage(RuntimeError):
+    """Raised when a write is attempted against a filesystem that cannot be written."""
+
+
 def _flush() -> None:
     """Atomic write: never leave a half-written db.json behind."""
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = DB_PATH.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(_load(), indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, DB_PATH)
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = DB_PATH.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(_load(), indent=2) + "\n", encoding="utf-8")
+        os.replace(tmp, DB_PATH)
+    except OSError as exc:
+        # Serverless filesystems are read-only. Fail with something a human can act on
+        # rather than a generic 500 twenty minutes into debugging.
+        raise ReadOnlyStorage(
+            "Storage is read-only, so this change was not saved. Configure Supabase "
+            "(SUPABASE_URL and SUPABASE_SERVICE_KEY) to enable writes — see "
+            "backend/DEPLOY.md."
+        ) from exc
 
 
 # --- generic collection access -----------------------------------------------------

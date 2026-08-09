@@ -34,6 +34,7 @@ def check_local() -> None:
         ("vpic_cache.json", "car search; rebuild with scripts/build_vpic_cache.py"),
         ("generations.json", "generation lookup"),
         ("parts.json", "parts catalogue source"),
+        ("seed_snapshot.json", "read-only fallback; refresh with scripts/snapshot.py"),
     ):
         path = BACKEND / "data" / filename
         check(f"data/{filename}", path.exists(), why if not path.exists()
@@ -60,11 +61,13 @@ def check_local() -> None:
         except Exception as exc:  # noqa: BLE001
             check("Supabase reachable", False, f"{type(exc).__name__}: {exc}")
     else:
+        # Not a hard failure: the site deploys and is fully browsable from the
+        # committed snapshot. It is a warning because writes - the hackathon's core
+        # requirement - do not work without it.
         check(
-            "Supabase configured", False,
-            "SUPABASE_URL and SUPABASE_SERVICE_KEY are unset. A serverless deploy has a "
-            "read-only filesystem, so the JSON store would start empty and every write "
-            "would fail. See db/README.md.",
+            "Supabase configured", None,
+            "unset. Deploy still works and the site is browsable, but every write "
+            "returns 503 - no contributions, forks or uploads. See db/README.md.",
         )
 
     # --- uploads ---
@@ -140,12 +143,26 @@ def main() -> None:
         print(f"  [{status}] {name:{width}}  {detail}")
 
     failures = sum(1 for s, _, _ in results if s == FAIL)
-    warnings = sum(1 for s, _, _ in results if s == WARN)
     print()
     if failures:
         print(f"{failures} blocking issue(s). Fix these before deploying.")
         sys.exit(1)
-    print(f"Ready to deploy{f' ({warnings} warning(s))' if warnings else ''}.")
+
+    if target:
+        print("Deployed API is up.")
+        return
+
+    from app.core.config import settings
+
+    if settings.use_supabase:
+        print("Ready to deploy. Reads and writes both work.")
+    else:
+        print("Ready to deploy READ-ONLY.")
+        print("  Works:      browsing every car, build, post, reply and part; search;")
+        print("              stats; the AI compare and build-guide endpoints.")
+        print("  Does not:   contributing, forking, replying, uploading — all 503.")
+        print("  To fix:     create the Supabase project (backend/db/README.md), then")
+        print("              re-run this check.")
 
 
 if __name__ == "__main__":
