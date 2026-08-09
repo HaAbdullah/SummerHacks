@@ -333,6 +333,47 @@ class CompareDraftRequest(BaseModel):
     title: str = "Your build"
 
 
+class ChatMessage(BaseModel):
+    """One line in the node AI chatbox — a user question or the AI's reply."""
+
+    id: str
+    nodeId: str
+    role: Literal["user", "ai"]
+    author: str
+    avatarColor: str = "#0071e3"
+    body: str
+    createdAt: str
+
+
+class ChatTurn(BaseModel):
+    """A prior message, as sent back by the frontend for conversation context.
+
+    The chatbox has no server-side session — the frontend's own thread state is the
+    history. Trimmed to the last few turns before being sent to the model.
+    """
+
+    role: Literal["user", "ai"]
+    body: str
+
+
+class AskAiRequest(BaseModel):
+    question: str
+    author: str = "You"
+    history: list[ChatTurn] = Field(default_factory=list)
+
+
+class PromptSuggestion(BaseModel):
+    id: str
+    prompt: str
+
+
+class PromptSuggestionsResponse(BaseModel):
+    """Auto-generated conversation starters, grounded in this node's own community notes."""
+
+    nodeId: str
+    suggestions: list[PromptSuggestion]
+
+
 class BuildModPayload(BaseModel):
     """Everything Ahmed's workflow needs to generate a build guide, in one call."""
 

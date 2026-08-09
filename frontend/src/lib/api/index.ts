@@ -1,14 +1,15 @@
 /**
  * BuildaMod API layer.
  *
- * Graph / nodes / posts / replies / stats / attributes / vehicle search are
- * real — backed by the FastAPI service in `backend/` via `./backend`.
+ * Graph / nodes / posts / replies / stats / attributes / vehicle search / the
+ * node AI chatbox are real — backed by the FastAPI service in `backend/` via
+ * `./backend`.
  *
- * AI chat, AI search, and build-guide generation stay mocked client-side:
- * the backend only exposes structured data for those (`/ai/compare`,
- * `/ai/build-mod`), not an actual generation call. Each mocked function
- * below reads *live* graph/node data instead of static fixtures, so it
- * still behaves sensibly against the real backend.
+ * AI search and build-guide generation stay mocked client-side: the backend
+ * only exposes structured data for those (`/ai/compare`, `/ai/build-mod`),
+ * not an actual generation call. Each mocked function below reads *live*
+ * graph/node data instead of static fixtures, so it still behaves sensibly
+ * against the real backend.
  */
 
 import type {
@@ -24,6 +25,7 @@ import type {
   Mods,
   Note,
   NoteReply,
+  PromptSuggestion,
   PulseData,
 } from "../types";
 import * as backend from "./backend";
@@ -233,7 +235,7 @@ export async function getPulse(carId: string): Promise<PulseData> {
   };
 }
 
-// --- mocked: node-level community/AI chat (no backend endpoint yet) -------
+// --- mocked: node-level community chat (no backend endpoint for this one) -
 
 export async function getChat(nodeId: string): Promise<ChatMessage[]> {
   await delay();
@@ -265,34 +267,29 @@ export async function sendChatMessage(
   return structuredClone(msg);
 }
 
+// --- AI chatbox (real backend) --------------------------------------------
+//
+// Grounded server-side in the node's mod info + community notes. Stateless on
+// the server, so the full prior thread is sent back as `history` on every
+// call — that's what gives the model multi-turn context.
+
 export async function askAiChat(
   nodeId: string,
   question: string,
+  priorThread: ChatMessage[] = [],
 ): Promise<ChatMessage[]> {
-  await delay(600);
-  const node = await getNode(nodeId).catch(() => null);
-  const user: ChatMessage = {
-    id: `ai-u-${Date.now()}`,
-    nodeId,
-    author: "You",
-    avatarColor: "#1d1d1f",
-    body: question,
-    createdAt: new Date().toISOString(),
-    role: "user",
-  };
-  const reply: ChatMessage = {
-    id: `ai-a-${Date.now() + 1}`,
-    nodeId,
-    author: "BuildaMod AI",
-    avatarColor: "#0071e3",
-    body: node
-      ? `For **${node.title}**: based on community notes, prioritize ${node.attributes.slice(0, 3).join(", ") || "core mods"} first. Est. difficulty tracks heat (${Math.round(node.stats.heat * 100)}). Want a full build guide or a part list?`
-      : "I can help plan this build — ask about parts, cost, or steps.",
-    createdAt: new Date().toISOString(),
-    role: "ai",
-  };
-  chats = [...chats, user, reply];
-  return [structuredClone(user), structuredClone(reply)];
+  const history = priorThread
+    .filter((m): m is ChatMessage & { role: "user" | "ai" } => m.role === "user" || m.role === "ai")
+    .map((m) => ({ role: m.role, body: m.body }));
+  return backend.askAiChat(nodeId, question, "You", history);
+}
+
+/** Auto-generated conversation starters for a node's AI chatbox, grounded in
+ * its own community notes where there are any. */
+export async function getChatSuggestions(
+  nodeId: string,
+): Promise<PromptSuggestion[]> {
+  return backend.getChatSuggestions(nodeId);
 }
 
 // --- mocked: AI search (heuristic scoring over live graph data) -----------

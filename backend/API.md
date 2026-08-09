@@ -120,6 +120,8 @@ tag traces back to one slot (`engine-turbo`, `brakes-bbk`, `wheels-allterrain`).
 | PATCH | `/posts/{postId}/position` | Move a post on the canvas |
 | GET | `/posts/{postId}/replies` | **getReply** |
 | POST | `/posts/{postId}/replies` | **addReply** |
+| POST | `/nodes/{nodeId}/chat` | **askAiChat** — node AI chatbox |
+| GET | `/nodes/{nodeId}/chat/suggestions` | **getPromptSuggestions** — auto prompts from community notes |
 | GET | `/ai/build-mod/{nodeId}` | **getBuildModAI** (Ahmed) |
 | GET | `/ai/compare?from=&to=` | **getCompareNode** (Ahmed) |
 
@@ -400,6 +402,80 @@ sub-category — `timing`, `crankshaft`, `oil`, `cooling`, `pads`, `muffler`, `h
 Edit `data/parts.json` and run `python scripts/seed_parts.py` to reload. Ids are derived
 from the name, so reseeding updates a part instead of duplicating it.
 
+---
+
+## POST `/nodes/n-rally/chat` — askAiChat
+
+The node's AI chatbox. Context is assembled server-side from the same place
+`getBuildModAI` reads from — this node's mod info (all four slots) plus every
+transcribed community note on it — so the model answers grounded in this specific
+build, not a generic car.
+
+There is no server-side chat session: the endpoint is stateless, and the frontend's own
+thread is the history. Send prior turns back as `history` (trimmed to the last 8 server-
+side) to keep multi-turn context; omit it for a fresh question.
+
+```json
+{
+  "question": "What should I upgrade next on this build?",
+  "author": "You",
+  "history": [
+    { "role": "user", "body": "Is 14psi enough boost for gravel stages?" },
+    { "role": "ai", "body": "It's on the conservative side, but one builder..." }
+  ]
+}
+```
+
+Returns the new `[userMessage, aiMessage]` pair to append to the thread:
+
+```json
+[
+  {
+    "id": "chat-u-n-rally-546890",
+    "nodeId": "n-rally",
+    "role": "user",
+    "author": "You",
+    "avatarColor": "#1d1d1f",
+    "body": "What should I upgrade next on this build?",
+    "createdAt": "2026-08-09T04:59:06Z"
+  },
+  {
+    "id": "chat-a-n-rally-546890",
+    "nodeId": "n-rally",
+    "role": "ai",
+    "author": "BuildaMod AI",
+    "avatarColor": "#0071e3",
+    "body": "Given your Turbo Rally Build, a good next upgrade would be...",
+    "createdAt": "2026-08-09T04:59:06Z"
+  }
+]
+```
+
+Model is `gpt-4o-mini` by default (override with `AI_MODEL`) — cheap per call, still
+sharp enough on car-modding specifics. If `AI_API_KEY` is unset or the call fails for any
+reason, the endpoint still returns 200 with a canned answer built from the node's own
+mods/notes instead of erroring, so the chatbox never dead-ends.
+
+## GET `/nodes/n-rally/chat/suggestions` — getPromptSuggestions
+
+Auto-generated conversation starters for the chatbox, grounded in this node's own
+community notes where there are any — the model is given the actual note text and asked
+to write short questions referencing specific details from it, not generic ones.
+
+```json
+{
+  "nodeId": "n-rally",
+  "suggestions": [
+    { "id": "sugg-n-rally-0", "prompt": "How does lowering boost to 14psi affect performance?" },
+    { "id": "sugg-n-rally-1", "prompt": "What are the benefits of a 3.5in turbo-back exhaust?" },
+    { "id": "sugg-n-rally-2", "prompt": "Are 16in gravel-spec wheels suitable for rally stages?" }
+  ]
+}
+```
+
+Falls back to note-referencing questions built without a model call if `AI_API_KEY` is
+unset or the call fails.
+
 # For Ahmed
 
 ## GET `/ai/compare?from=n-turbo&to=n-rally` — getCompareNode
@@ -480,7 +556,9 @@ app/services/     business logic
     graph_service       graphs, nodes, stats
     generations         curated generation table
     community_service   posts, replies
-    ai_service          compare, build payload
+    ai_service          compare, build payload (arithmetic + assembly, no model call)
+    chat_service         node AI chatbox — prompt assembly + suggestions, calls llm
+    llm                  thin OpenAI chat-completion client (httpx, no SDK)
     placement           where a new build goes in the DAG
     tagging             mods -> filter tags
     transcription       media -> text (stub; swap in a model here)
@@ -496,3 +574,6 @@ rewriting that one module — no service, route or response shape changes.
 
 Transcription is a stub returning a placeholder and `transcribed: false`. Wiring a real
 vision/speech model means replacing two functions in `services/transcription.py`.
+
+The chatbox is the one place a model actually runs. `AI_API_KEY` (an OpenAI key) and
+`AI_MODEL` (default `gpt-4o-mini`) live in `.env` — see `services/llm.py`.

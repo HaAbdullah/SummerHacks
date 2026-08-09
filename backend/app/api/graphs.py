@@ -9,8 +9,10 @@ from __future__ import annotations
 from fastapi import APIRouter, Body, File, Form, HTTPException, Query, UploadFile
 
 from app.models.schemas import (
+    AskAiRequest,
     BuildModPayload,
     Car,
+    ChatMessage,
     CommunityPost,
     CompareDraftRequest,
     CompareResponse,
@@ -21,12 +23,14 @@ from app.models.schemas import (
     Graph,
     Node,
     NodeDetail,
+    PromptSuggestionsResponse,
     Reply,
     Stats,
 )
 from app.services import (
     ai_service,
     analytics_service,
+    chat_service,
     community_service,
     generations,
     graph_service,
@@ -300,6 +304,38 @@ def create_reply(post_id: str, req: CreateReplyRequest) -> Reply:
     if reply is None:
         raise HTTPException(404, f"No post '{post_id}'")
     return reply
+
+
+# --- AI chatbox (node-level) --------------------------------------------------------
+
+@router.post("/nodes/{node_id}/chat", response_model=list[ChatMessage], tags=["ai"])
+def ask_ai_chat(node_id: str, req: AskAiRequest) -> list[ChatMessage]:
+    """askAiChat. Answers grounded in this node's mod info + community notes.
+
+    Stateless server-side — pass prior turns in `history` for multi-turn context. Falls
+    back to a canned, still-grounded answer if the model call fails, so the chatbox never
+    dead-ends.
+    """
+    if not req.question.strip():
+        raise HTTPException(400, "question is required")
+    result = chat_service.ask(node_id, req)
+    if result is None:
+        raise HTTPException(404, f"No node '{node_id}'")
+    return result
+
+
+@router.get(
+    "/nodes/{node_id}/chat/suggestions",
+    response_model=PromptSuggestionsResponse,
+    tags=["ai"],
+)
+def get_chat_suggestions(node_id: str) -> PromptSuggestionsResponse:
+    """getPromptSuggestions. Auto-generated conversation starters for the chatbox,
+    grounded in this node's own community notes where there are any."""
+    result = chat_service.suggestions(node_id)
+    if result is None:
+        raise HTTPException(404, f"No node '{node_id}'")
+    return result
 
 
 # --- AI (Ahmed) --------------------------------------------------------------------

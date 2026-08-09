@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     supabase_service_key: str = ""
     supabase_bucket: str = "community-media"
 
+    # AI chatbox (node-level). Leave blank and chat falls back to a canned, still-useful
+    # answer built from the node's own mods/notes — no key required to demo the UI.
+    # Model defaults to a cheap-but-competent chat model; override with AI_MODEL if needed.
+    ai_api_key: str = ""
+    ai_model: str = "gpt-4o-mini"
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

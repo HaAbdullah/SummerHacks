@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { askAiChat, generateBuildGuide } from "@/lib/api";
-import type { BuildGuide, BuildNodeData, ChatMessage } from "@/lib/types";
+import { askAiChat, generateBuildGuide, getChatSuggestions } from "@/lib/api";
+import type { BuildGuide, BuildNodeData, ChatMessage, PromptSuggestion } from "@/lib/types";
 
 export function NodeSidePanel({ node }: { node: BuildNodeData }) {
   const [aiThread, setAiThread] = useState<ChatMessage[]>([]);
@@ -11,6 +11,7 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
   const [guide, setGuide] = useState<BuildGuide | null>(null);
   const [building, setBuilding] = useState(false);
   const [compareOn, setCompareOn] = useState(false);
+  const [suggestions, setSuggestions] = useState<PromptSuggestion[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -19,24 +20,43 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
     setAiThread([]);
     setGuide(null);
     setAiInput("");
+    setSuggestions([]);
+    getChatSuggestions(node.id)
+      .then(setSuggestions)
+      .catch(() => setSuggestions([]));
   }, [node.id]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [aiThread, guide]);
 
-  const sendAi = async () => {
-    if (!aiInput.trim() || busy) return;
+  const ask = async (question: string) => {
+    if (!question.trim() || busy) return;
     setBusy(true);
-    const q = aiInput.trim();
     setAiInput("");
+    setSuggestions([]);
     try {
-      const pair = await askAiChat(node.id, q);
+      const pair = await askAiChat(node.id, question.trim(), aiThread);
       setAiThread((t) => [...t, ...pair]);
+    } catch {
+      setAiThread((t) => [
+        ...t,
+        {
+          id: `ai-err-${Date.now()}`,
+          nodeId: node.id,
+          author: "BuildaMod AI",
+          avatarColor: "#0071e3",
+          body: "Couldn't reach the AI right now. Try again in a moment.",
+          createdAt: new Date().toISOString(),
+          role: "ai",
+        },
+      ]);
     } finally {
       setBusy(false);
     }
   };
+
+  const sendAi = () => ask(aiInput);
 
   const runBuild = async () => {
     setBuilding(true);
@@ -112,9 +132,26 @@ export function NodeSidePanel({ node }: { node: BuildNodeData }) {
         ))}
 
         {aiThread.length === 0 && !guide && (
-          <p className="text-ui text-muted">
-            Ask about parts, cost, or build order.
-          </p>
+          <div className="space-y-2.5">
+            <p className="text-ui text-muted">
+              Ask about parts, cost, or build order.
+            </p>
+            {suggestions.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => void ask(s.prompt)}
+                    disabled={busy}
+                    className="focus-ring rounded-[var(--radius-sm)] border border-line bg-bg px-2.5 py-2 text-left text-ui text-ink-soft transition-colors hover:border-accent/40 hover:bg-accent/5 disabled:opacity-50"
+                  >
+                    {s.prompt}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {guide && (
