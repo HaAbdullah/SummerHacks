@@ -1,0 +1,42 @@
+# Render Blueprint. Dashboard → New → Blueprint → point it at this repo and it reads
+# everything below, so there is no form to fill in wrong.
+#
+# Render runs a real long-lived process rather than serverless functions, which suits
+# this backend better than Vercel did: writes to local disk work, uploads are not capped
+# at ~4.5MB, and there is no function timeout on the vision/transcription path.
+#
+# Caveat on the free plan: the instance sleeps after 15 minutes idle and takes 30-60s to
+# wake. See the keep-alive note in backend/DEPLOY.md — a judge clicking a cold link and
+# waiting a minute is the single most likely way this demo fails.
+
+services:
+  - type: web
+    name: modbranch-api
+    runtime: python
+    plan: free
+    # The repo holds both frontend and backend; without this Render builds the wrong one.
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # $PORT is injected by Render — binding to anything else fails the health check.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      # Set in the dashboard, not here — secrets never belong in a committed file.
+      - key: AI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: community-media
+      # Must include the deployed frontend origin or the browser blocks every request
+      # while the API keeps working fine in curl.
+      - key: CORS_ORIGINS
+        sync: false
