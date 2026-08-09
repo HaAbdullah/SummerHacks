@@ -12,6 +12,7 @@ from app.models.schemas import (
     BuildModPayload,
     Car,
     CommunityPost,
+    CompareDraftRequest,
     CompareResponse,
     CreateNodeRequest,
     CreatePostRequest,
@@ -296,6 +297,19 @@ def get_build_mod(node_id: str) -> BuildModPayload:
     if payload is None:
         raise HTTPException(404, f"No node '{node_id}'")
     return payload
+
+
+@router.post("/ai/compare", response_model=CompareResponse, tags=["ai"])
+def compare_draft(req: CompareDraftRequest) -> CompareResponse:
+    """Diff an unsaved build — what the vision model just extracted from a photo.
+
+    Same response shape as the GET, so one renderer handles both. `toNodeId` is empty
+    because the build does not exist yet. Omit `fromNodeId` to diff against stock.
+    """
+    result = ai_service.compare_draft(req.fromNodeId, req.mods, req.title)
+    if result is None:
+        raise HTTPException(404, f"No node '{req.fromNodeId}'")
+    return result
 
 
 @router.get("/ai/compare", response_model=CompareResponse, tags=["ai"])

@@ -262,6 +262,19 @@ class CompareResponse(BaseModel):
     explanation: str | None = None
 
 
+class CompareDraftRequest(BaseModel):
+    """Compare a build that is not saved yet — the vision-extraction path.
+
+    A photo becomes a build JSON before any node exists, so there is no id to pass to
+    GET /ai/compare. Send the extracted mods here instead.
+    """
+
+    mods: Mods
+    # Omit to diff against stock, which is what a first upload wants.
+    fromNodeId: str | None = None
+    title: str = "Your build"
+
+
 class BuildModPayload(BaseModel):
     """Everything Ahmed's workflow needs to generate a build guide, in one call."""
 
