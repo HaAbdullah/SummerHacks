@@ -1,6 +1,10 @@
 from fastapi import APIRouter
 
+from app.api import graphs
+
 router = APIRouter()
+
+router.include_router(graphs.router)
 
 
 @router.get("/health")

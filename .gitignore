@@ -46,3 +46,4 @@ coverage/
 # Logs
 *.log
 npm-debug.log*
+backend/data/db.json
